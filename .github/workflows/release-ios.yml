@@ -7,10 +7,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
-      - run: npm ci
-      - run: npm run cap:sync
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: 1.4.4 }
+      - run: bun install --frozen-lockfile
+      - run: bun run cap:sync
       - name: Versao a partir da tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"

@@ -1,11 +1,11 @@
 # Primeiros passos
 
-1. `npm install`
+1. `bun install`
 2. Copie `.env.example` para `.env` e preencha.
 3. `supabase link` e `supabase db push` (cria o esquema de `supabase/migrations`).
-4. `npm run dev`
-5. Plataformas nativas (uma vez, na sua maquina): `npm run build:mobile && npx cap add android && npx cap add ios` e commit das pastas `android/` e `ios/`.
-6. Icones/splash: `npm i -D @capacitor/assets && npx capacitor-assets generate` (usa static/logo.png).
+4. `bun run dev`
+5. Plataformas nativas (uma vez, na sua maquina): `bun run build:mobile && bunx cap add android && bunx cap add ios` e commit das pastas `android/` e `ios/`.
+6. Icones/splash: `bun add -d @capacitor/assets && bunx capacitor-assets generate` (usa static/logo.png).
 
 ## Secrets do GitHub (Settings > Secrets and variables > Actions)
 
