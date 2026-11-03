@@ -1,0 +1,29 @@
+name: Release iOS
+on:
+  push:
+    tags: ['v*']
+jobs:
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run cap:sync
+      - name: Versao a partir da tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd ios/App
+          agvtool new-marketing-version "$VERSION"
+          agvtool new-version -all ${{ github.run_number }}
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: '3.3', bundler-cache: true }
+      - name: Fastlane (assina e envia ao TestFlight)
+        run: bundle exec fastlane ios beta
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}

@@ -1,0 +1,14 @@
+node_modules
+.svelte-kit
+build
+.vercel
+.env
+.env.*
+!.env.example
+android/app/build
+android/.gradle
+ios/App/Pods
+*.keystore
+*.jks
+*.p12
+*.mobileprovision

@@ -1,0 +1,36 @@
+name: Release Android
+on:
+  push:
+    tags: ['v*']
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npm run cap:sync
+      - name: Versao a partir da tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/versionName \".*\"/versionName \"$VERSION\"/; s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+      - name: Keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+      - name: Build AAB assinado
+        working-directory: android
+        run: |
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=$PWD/app/release.keystore \
+            -Pandroid.injected.signing.store.password='${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' \
+            -Pandroid.injected.signing.key.alias='${{ secrets.ANDROID_KEY_ALIAS }}' \
+            -Pandroid.injected.signing.key.password='${{ secrets.ANDROID_KEY_PASSWORD }}'
+      - name: Enviar ao Google Play (faixa interna)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: br.com.jolog.agendamento
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal

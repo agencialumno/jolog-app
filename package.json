@@ -1,0 +1,40 @@
+{
+	"name": "jolog-app",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build:web": "BUILD_TARGET=web vite build",
+		"build:mobile": "BUILD_TARGET=mobile vite build",
+		"cap:sync": "npm run build:mobile && cap sync",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write .",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@capacitor/cli": "^8.6.0",
+		"@commitlint/cli": "^21.2.4",
+		"@commitlint/config-conventional": "^21.2.4",
+		"@sveltejs/adapter-static": "^4.0.1",
+		"@sveltejs/adapter-vercel": "^7.0.2",
+		"@sveltejs/kit": "^3.1.1",
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
+		"@types/node": "^26.6.6",
+		"eslint": "^10.14.0",
+		"prettier": "^3.9.10",
+		"prettier-plugin-svelte": "^4.1.1",
+		"svelte": "^5.57.3",
+		"svelte-check": "^4.7.8",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.5",
+		"vitest": "^5.1.0"
+	},
+	"dependencies": {
+		"@capacitor/core": "^8.6.0",
+		"@fontsource/barlow-condensed": "^5.3.0",
+		"@fontsource/inter": "^5.3.0",
+		"@supabase/supabase-js": "^2.118.0"
+	}
+}
