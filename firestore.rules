@@ -1,0 +1,82 @@
+rules_version = '2';
+// Escrita sensivel (preco, status, pagamento, NF, papeis) e SO pelo servidor (Admin SDK ignora estas regras).
+// O papel vem do custom claim "role", definido apenas no servidor.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function role() { return request.auth.token.get('role', ''); }
+    function isAdmin() { return signedIn() && role() == 'admin'; }
+    function isCliente() { return signedIn() && role() == 'cliente'; }
+    function bookingPath(id) { return /databases/$(database)/documents/bookings/$(id); }
+    function bookingOwner(id) { return get(bookingPath(id)).data.customerId == uid(); }
+    function bookingAssigned(id) { return get(bookingPath(id)).data.assignedStaff == uid(); }
+
+    match /profiles/{userId} {
+      allow read: if signedIn() && (uid() == userId || isAdmin());
+      // Cliente edita so dados proprios; "role" e qualquer outro campo sao imutaveis pelo app.
+      allow update: if signedIn() && uid() == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'cpfCnpj'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 120;
+      allow create, delete: if false;
+    }
+
+    match /properties/{propertyId} {
+      allow read: if signedIn() && (resource.data.ownerId == uid() || isAdmin());
+      allow create: if isCliente() && request.resource.data.ownerId == uid()
+        && request.resource.data.keys().hasOnly(['ownerId', 'address', 'condominium', 'bedrooms'])
+        && request.resource.data.address is string && request.resource.data.address.size() > 0
+        && request.resource.data.bedrooms in [2, 3];
+      allow update: if isCliente() && resource.data.ownerId == uid()
+        && request.resource.data.ownerId == uid()
+        && request.resource.data.keys().hasOnly(['ownerId', 'address', 'condominium', 'bedrooms'])
+        && request.resource.data.address is string && request.resource.data.address.size() > 0
+        && request.resource.data.bedrooms in [2, 3];
+      allow delete: if isCliente() && resource.data.ownerId == uid();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if signedIn() && (resource.data.customerId == uid() || resource.data.assignedStaff == uid() || isAdmin());
+      allow write: if false;
+
+      match /photos/{photoId} {
+        allow read: if signedIn() && (bookingOwner(bookingId) || bookingAssigned(bookingId) || isAdmin());
+        allow write: if false;
+      }
+    }
+
+    match /payments/{paymentId} {
+      allow read: if signedIn() && (isAdmin() || bookingOwner(resource.data.bookingId));
+      allow write: if false;
+    }
+
+    match /invoices/{bookingId} {
+      allow read: if signedIn() && (isAdmin() || bookingOwner(bookingId));
+      allow write: if false;
+    }
+
+    // Avaliacao: id do documento = id do pedido. Somente o dono, pedido concluido.
+    match /reviews/{bookingId} {
+      allow read: if signedIn() && (isAdmin() || bookingOwner(bookingId));
+      allow create, update: if isCliente() && bookingOwner(bookingId)
+        && get(bookingPath(bookingId)).data.status == 'completed'
+        && request.resource.data.keys().hasOnly(['customerId', 'rating', 'comment', 'createdAt'])
+        && request.resource.data.customerId == uid()
+        && request.resource.data.rating is int && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && (!('comment' in request.resource.data) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 1000))
+        && request.resource.data.createdAt == request.time;
+      allow delete: if false;
+    }
+
+    match /inspectionChecklistItems/{itemId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // paymentEvents e slotLocks: sem regra = so o servidor.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -11,18 +11,21 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"test": "vitest run"
+		"test": "firebase emulators:exec --only firestore --project demo-jolog \"vitest run\"",
+		"test:unit": "vitest run"
 	},
 	"devDependencies": {
 		"@capacitor/cli": "^8.6.0",
 		"@commitlint/cli": "^21.2.4",
 		"@commitlint/config-conventional": "^21.2.4",
+		"@firebase/rules-unit-testing": "^6.0.0",
 		"@sveltejs/adapter-static": "^4.0.1",
 		"@sveltejs/adapter-vercel": "^7.0.2",
 		"@sveltejs/kit": "^3.1.1",
 		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@types/node": "^26.6.6",
 		"eslint": "^10.14.0",
+		"firebase-tools": "^14",
 		"prettier": "^3.9.10",
 		"prettier-plugin-svelte": "^4.1.1",
 		"svelte": "^5.57.3",
@@ -35,7 +38,9 @@
 		"@capacitor/core": "^8.6.0",
 		"@fontsource/barlow-condensed": "^5.3.0",
 		"@fontsource/inter": "^5.3.0",
-		"@supabase/supabase-js": "^2.118.0"
+		"@vercel/blob": "^2.8.2",
+		"firebase": "^13.2.0",
+		"firebase-admin": "^14.5.0"
 	},
 	"packageManager": "bun@1.4.4"
 }

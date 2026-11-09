@@ -15,7 +15,7 @@ export interface BookingRepo {
 	}>;
 	markExpired(bookingId: string): Promise<void>;
 	markRefunded(bookingId: string): Promise<void>;
-	saveInvoice(bookingId: string, externalId: string, status: string): Promise<void>;
+	saveInvoice(bookingId: string, externalId: string, status: string, pdfUrl?: string): Promise<void>;
 	recordInvoiceFailure(bookingId: string, error: string): Promise<void>;
 }
 
@@ -39,7 +39,7 @@ export async function handlePaymentEvent(
 				valueCents: b.valueCents,
 				serviceDate: b.serviceDate
 			});
-			await repo.saveInvoice(e.externalReference, inv.externalId, inv.status);
+			await repo.saveInvoice(e.externalReference, inv.externalId, inv.status, inv.pdfUrl);
 		} catch (err) {
 			await repo.recordInvoiceFailure(e.externalReference, err instanceof Error ? err.message : String(err));
 		}

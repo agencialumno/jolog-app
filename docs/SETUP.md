@@ -1,11 +1,40 @@
 # Primeiros passos
 
 1. `bun install`
-2. Copie `.env.example` para `.env` e preencha.
-3. `supabase link` e `supabase db push` (cria o esquema de `supabase/migrations`).
-4. `bun run dev`
-5. Plataformas nativas (uma vez, na sua maquina): `bun run build:mobile && bunx cap add android && bunx cap add ios` e commit das pastas `android/` e `ios/`.
-6. Icones/splash: `bun add -d @capacitor/assets && bunx capacitor-assets generate` (usa static/logo.png).
+2. Copie `.env.example` para `.env` e preencha (o repositorio e PUBLICO: nunca commite valores reais).
+3. `bun run dev`
+4. Plataformas nativas (uma vez, na sua maquina): `bun run build:mobile && bunx cap add android && bunx cap add ios` e commit das pastas `android/` e `ios/`.
+5. Icones/splash: `bun add -d @capacitor/assets && bunx capacitor-assets generate` (usa static/logo.png).
+
+## Firebase
+
+1. Crie o projeto no console do Firebase. Ative **Authentication > Sign-in method > E-mail/senha** (nenhum login social) e crie o **Firestore** (modo producao).
+2. App web do projeto: copie `apiKey`, `authDomain`, `projectId`, `appId` para `PUBLIC_FIREBASE_*`. (Sao identificadores publicos; a protecao vem das regras.)
+3. Service account (Configuracoes do projeto > Contas de servico > Gerar chave): use `project_id`, `client_email` e `private_key` em `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` **somente** nas variaveis de ambiente do Vercel / seu `.env` local. Nunca commite o JSON. `FIREBASE_PRIVATE_KEY` vai em uma linha com `\n` literais.
+4. Publique regras e indices: `bunx firebase deploy --only firestore:rules,firestore:indexes --project <id>`.
+5. **Primeiro admin** (local, nunca por endpoint publico), com as variaveis `FIREBASE_*` carregadas no shell:
+   `bun run scripts/create-admin.ts voce@email.com "SenhaForte123" "Seu Nome"`.
+   Depois faca login de novo no painel. Outros papeis: `POST /api/admin/users/:uid/role` com `{"role":"equipe"}` (so admin).
+6. Cadastro novo: o app cria a conta no Firebase Auth e chama `POST /api/me/init`; o servidor define `cliente`. Ninguem se promove sozinho.
+
+## Vercel Blob (fotos, store PRIVADA)
+
+1. Vercel > Storage > Create > Blob, acesso **Private** (ou `vercel blob create-store jolog-photos --access private --yes`). Requer `@vercel/blob` >= 2.3.
+2. Conecte a store ao projeto: gera `BLOB_READ_WRITE_TOKEN` (na Vercel o SDK tambem aceita OIDC). Para rodar local, copie o token para `.env`.
+3. O app nunca recebe URL do blob: ele baixa por `GET /api/bookings/:id/photos/:photoId` com `Authorization: Bearer`.
+4. Para trocar por Cloudflare R2: implemente `FileStorage` (`src/lib/server/storage/types.ts`) e troque em `src/lib/server/deps.ts`.
+
+## Testes
+
+`bun run test` sobe o emulador do Firestore (`firebase emulators:exec`) e roda tudo (regras, concorrencia, fotos, unitarios). Exige **Java 17+** localmente (firebase-tools 14) e baixa o emulador na primeira vez. `bun run test:unit` roda sem emulador (os testes que precisam dele falham).
+No CI o Java 21 e instalado por `actions/setup-java`.
+
+## Login no app (Capacitor)
+
+Usamos o SDK web do Firebase com `initializeAuth` e persistencia `indexedDBLocalPersistence` (fallback `browserLocalPersistence`), sem resolver de popup/redirect
+(`src/lib/firebase-client.ts`), porque o `getAuth()` padrao ja travou no WebView do iOS. **Nao testado em aparelho real.** Se a sessao nao persistir ou o login travar,
+migre para `@capacitor-firebase/authentication` (plugin nativo, e-mail/senha) e troque so `firebase-client.ts`/`api.ts`.
+Toda chamada a API envia `Authorization: Bearer <ID token>`; o servidor valida em `src/lib/server/auth.ts` (modulo unico).
 
 ## Secrets do GitHub (Settings > Secrets and variables > Actions)
 

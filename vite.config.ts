@@ -7,10 +7,17 @@ import { defineConfig } from 'vitest/config';
 const mobile = process.env.BUILD_TARGET === 'mobile';
 
 export default defineConfig({
+	// Variaveis publicas (PUBLIC_*) chegam ao app via import.meta.env; segredos nunca usam este prefixo.
+	envPrefix: ['VITE_', 'PUBLIC_'],
 	plugins: [
 		sveltekit({
 			adapter: mobile ? adapterStatic({ pages: 'build', assets: 'build', fallback: 'index.html' }) : adapterVercel()
 		})
 	],
-	test: { include: ['src/**/*.test.ts'] }
+	test: {
+		include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
+		fileParallelism: false,
+		testTimeout: 20000,
+		env: { FIREBASE_PROJECT_ID: 'demo-jolog' }
+	}
 });

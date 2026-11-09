@@ -39,6 +39,15 @@ export class AsaasInvoiceProvider implements InvoiceProvider {
 		return { externalId: issued.id, status: 'processing' };
 	}
 
+	/** SEM teste contra API real: validar campos (status, pdfUrl, number) no sandbox. */
+	async get(externalId: string): Promise<InvoiceResult> {
+		const r = await this.call<{ id: string; status?: string; pdfUrl?: string; number?: string }>(
+			`/invoices/${externalId}`
+		);
+		const status = r.status === 'AUTHORIZED' ? 'authorized' : r.status === 'ERROR' ? 'error' : 'processing';
+		return { externalId: r.id, status, pdfUrl: r.pdfUrl, number: r.number };
+	}
+
 	async cancel(externalId: string): Promise<void> {
 		await this.call(`/invoices/${externalId}`, { method: 'DELETE' });
 	}

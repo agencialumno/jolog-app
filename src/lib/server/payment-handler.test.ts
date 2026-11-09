@@ -21,6 +21,7 @@ function mk(failInvoice = false) {
 			if (failInvoice) throw new Error('boom');
 			return { externalId: 'n1', status: 'processing' };
 		},
+		get: async () => ({ externalId: 'n1', status: 'processing' }),
 		cancel: async () => {}
 	};
 	return { log, repo, inv };
