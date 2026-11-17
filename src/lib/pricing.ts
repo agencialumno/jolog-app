@@ -1,13 +1,13 @@
 /**
- * Precos (PADRAO PROPOSTO, valores a confirmar pela Jolog). Sempre calculados no servidor.
+ * Precos (valores definidos pela Jolog; lavanderia por ciclo a confirmar). Sempre calculados no servidor.
  */
 import { cleaningDurationMinutes, laundryTotalMinutes, type Bedrooms } from './scheduling';
 
 export const PRICES = {
-	cleaning2BedroomsCents: 15000,
-	cleaning3BedroomsCents: 21000,
-	laundryPerCycleCents: 6000,
-	inspectionCents: 9000
+	cleaning2BedroomsCents: 13000,
+	cleaning3BedroomsCents: 16000,
+	laundryPerCycleCents: 5300, // TODO confirmar com a Jolog se e por ciclo
+	inspectionCents: 4000
 } as const;
 
 export const INSPECTION_DURATION_MINUTES = 60;

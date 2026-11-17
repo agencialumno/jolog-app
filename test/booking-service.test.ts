@@ -42,7 +42,7 @@ describe('createBooking', () => {
 	it('calcula preco no servidor e reserva slots', async () => {
 		const p = await newProperty('ana');
 		const r = await createBooking(db(), { customerId: 'ana', input: cleaning(p), now: NOW });
-		expect(r.priceCents).toBe(15000);
+		expect(r.priceCents).toBe(13000);
 		const b = (await db().collection('bookings').doc(r.id).get()).data() as BookingDoc;
 		expect(b.slotKeys).toHaveLength(2); // 2h
 		expect(b.status).toBe('pending_payment');
@@ -103,7 +103,7 @@ describe('createBooking', () => {
 			input: { service: 'laundry', cycles: 3, desiredDate: '2026-11-12' },
 			now: NOW
 		});
-		expect(r.priceCents).toBe(18000);
+		expect(r.priceCents).toBe(15900);
 		expect((await db().collection('slotLocks').get()).size).toBe(0);
 	});
 });
@@ -117,7 +117,7 @@ describe('pagamento (repo)', () => {
 		expect(await repo.registerEvent('evt1')).toBe(true);
 		expect(await repo.registerEvent('evt1')).toBe(false);
 		const info = await repo.markPaid(b.id, 'prov1');
-		expect(info.valueCents).toBe(15000);
+		expect(info.valueCents).toBe(13000);
 		const doc = (await db().collection('bookings').doc(b.id).get()).data() as BookingDoc;
 		expect(doc.status).toBe('scheduled');
 		expect((await db().collection('slotLocks').doc(doc.slotKeys[0]).get()).get('expiresAt')).toBeNull();
