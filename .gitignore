@@ -13,3 +13,5 @@ ios/App/Pods
 *.p12
 *.mobileprovision
 *-debug.log
+
+context.md
