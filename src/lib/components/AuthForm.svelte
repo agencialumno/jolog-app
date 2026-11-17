@@ -12,6 +12,7 @@
 	let password = $state('');
 	let error = $state('');
 	let busy = $state(false);
+	let show = $state(false);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
@@ -35,7 +36,6 @@
 </script>
 
 <main class="page">
-	<img src="/logo.png" alt="Grupo Jolog" width="96" />
 	<h1>{signup ? 'Criar conta' : 'Entrar'}</h1>
 	<form onsubmit={submit} novalidate>
 		{#if signup}
@@ -43,14 +43,19 @@
 			<label>Telefone (opcional)<input bind:value={phone} type="tel" autocomplete="tel" inputmode="tel" /></label>
 		{/if}
 		<label>E-mail<input bind:value={email} type="email" autocomplete="email" inputmode="email" required /></label>
-		<label
-			>Senha<input
+		<label for="pw">Senha</label>
+		<div class="pw">
+			<input
+				id="pw"
 				bind:value={password}
-				type="password"
+				type={show ? 'text' : 'password'}
 				autocomplete={signup ? 'new-password' : 'current-password'}
 				required
-			/></label
-		>
+			/>
+			<button type="button" class="toggle" onclick={() => (show = !show)} aria-pressed={show}>
+				{show ? 'Ocultar' : 'Mostrar'}
+			</button>
+		</div>
 		{#if error}<p class="error" role="alert">{error}</p>{/if}
 		<button type="submit" disabled={busy}>{busy ? 'Aguarde…' : signup ? 'Criar conta' : 'Entrar'}</button>
 	</form>
@@ -99,5 +104,23 @@
 	.alt a {
 		color: var(--color-primary);
 		font-weight: 600;
+	}
+	.pw {
+		position: relative;
+		display: grid;
+	}
+	.pw input {
+		padding-right: 96px;
+	}
+	.toggle {
+		position: absolute;
+		right: 4px;
+		top: 2px;
+		bottom: 2px;
+		min-height: 44px;
+		background: transparent;
+		color: var(--color-primary);
+		box-shadow: none;
+		font-size: 14px;
 	}
 </style>
