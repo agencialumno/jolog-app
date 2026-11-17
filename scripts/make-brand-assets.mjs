@@ -23,7 +23,9 @@ async function canvas(size, ratio, file) {
 
 await canvas(1024, 0.72, 'assets/icon-only.png'); // iOS 1024x1024, sem alfa
 await canvas(1024, 0.55, 'assets/icon-foreground.png'); // zona segura do adaptive icon
-await sharp({ create: { width: 1024, height: 1024, channels: 3, background: WHITE } }).png().toFile('assets/icon-background.png');
+await sharp({ create: { width: 1024, height: 1024, channels: 3, background: WHITE } })
+	.png()
+	.toFile('assets/icon-background.png');
 await canvas(2732, 0.28, 'assets/splash.png');
 await canvas(2732, 0.28, 'assets/splash-dark.png');
 console.log('ok');
