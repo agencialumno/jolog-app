@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { firebaseAuth } from './firebase-client';
 const env = import.meta.env;
 
@@ -10,9 +12,21 @@ export class ApiError extends Error {
 	}
 }
 
+/** Aguarda o Firebase restaurar o usuario da persistencia local (IndexedDB) se ainda nao estiver pronto. */
+export async function getAuthUser(): Promise<User | null> {
+	const auth = firebaseAuth();
+	if (auth.currentUser) return auth.currentUser;
+	return new Promise((resolve) => {
+		const unsubscribe = onAuthStateChanged(auth, (u) => {
+			unsubscribe();
+			resolve(u);
+		});
+	});
+}
+
 /** Toda chamada a API do Vercel leva o ID token do Firebase em Authorization: Bearer. */
 export async function api<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
-	const user = firebaseAuth().currentUser;
+	const user = await getAuthUser();
 	if (!user) throw new ApiError(401, 'not signed in');
 	let token = await user.getIdToken();
 	const makeHeaders = (t: string) => {
@@ -21,12 +35,18 @@ export async function api<T = unknown>(path: string, init: RequestInit = {}): Pr
 		if (typeof init.body === 'string') h.set('Content-Type', 'application/json');
 		return h;
 	};
-	let res = await fetch((env.PUBLIC_API_BASE_URL ?? '') + path, { ...init, headers: makeHeaders(token) });
+	// No browser (web/localhost), chamadas relativas sao seguras e evitam problemas de porta/CORS. No app nativo (Capacitor), usa PUBLIC_API_BASE_URL.
+	const baseUrl = Capacitor.isNativePlatform() ? (env.PUBLIC_API_BASE_URL ?? '') : '';
+	let res = await fetch(baseUrl + path, { ...init, headers: makeHeaders(token) });
 	if (res.status === 403) {
 		token = await user.getIdToken(true);
-		res = await fetch((env.PUBLIC_API_BASE_URL ?? '') + path, { ...init, headers: makeHeaders(token) });
+		res = await fetch(baseUrl + path, { ...init, headers: makeHeaders(token) });
 	}
-	if (!res.ok) throw new ApiError(res.status, await res.text());
+	if (!res.ok) {
+		const text = await res.text();
+		console.error(`API ${path} failed (${res.status}):`, text);
+		throw new ApiError(res.status, text);
+	}
 	return res.headers.get('content-type')?.includes('json') ? ((await res.json()) as T) : (undefined as T);
 }
 

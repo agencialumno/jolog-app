@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
-	import { api, ApiError } from '../api';
+	import { api, ApiError, getAuthUser } from '../api';
 	import { firebaseAuth, firestore } from '../firebase-client';
 	import { priceCents, scheduleMinutes } from '../pricing';
 	import { dayLabel, formatBRL, nextDays, timeLabel } from '../ui/dates';
@@ -69,9 +69,9 @@
 
 	onMount(async () => {
 		try {
-			const uid = firebaseAuth().currentUser?.uid;
-			if (!uid) throw new Error('no user');
-			const snap = await getDocs(query(collection(firestore(), 'properties'), where('ownerId', '==', uid)));
+			const user = await getAuthUser();
+			if (!user) throw new Error('no user');
+			const snap = await getDocs(query(collection(firestore(), 'properties'), where('ownerId', '==', user.uid)));
 			properties = snap.docs.map((d) => ({
 				id: d.id,
 				address: d.get('address') as string,
@@ -80,7 +80,8 @@
 			}));
 			if (properties.length) propertyId = properties[0].id;
 			if (service === 'inspection') checklist = await api('/api/checklist');
-		} catch {
+		} catch (err) {
+			console.error('BookingFlow onMount error:', err);
 			loadError = 'Não foi possível carregar seus dados. Verifique a conexão e tente de novo.';
 		} finally {
 			loading = false;
@@ -92,10 +93,12 @@
 		startsAt = '';
 		try {
 			const q = service === 'cleaning' ? `service=cleaning&bedrooms=${effBedrooms}` : 'service=inspection';
-			slots = (await api<{ slots: string[] }>(`/api/availability?date=${d}&${q}`)).slots;
+			const res = await api<{ slots: string[] }>(`/api/availability?date=${d}&${q}`);
+			slots = res.slots;
 			strip = { ...strip, [d]: slots.length > 0 };
 			slotsState = 'idle';
-		} catch {
+		} catch (err) {
+			console.error('loadSlots error:', err);
 			slotsState = 'error';
 		}
 	}
@@ -144,6 +147,9 @@
 		if (step === 0) {
 			step = 1;
 			await loadSlots(date);
+			if (slots.length === 0) {
+				await nextFree();
+			}
 			void Promise.all(days.map((d) => (d === date ? null : peek(d))));
 			return;
 		}
