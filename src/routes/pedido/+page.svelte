@@ -63,7 +63,16 @@
 				payError = 'Link de pagamento não gerado.';
 			}
 		} catch (e) {
-			payError = 'Não foi possível gerar o link de pagamento. Tente novamente.';
+			let msg = 'Não foi possível gerar o link de pagamento. Tente novamente.';
+			if (e instanceof Error) {
+				try {
+					const parsed = JSON.parse(e.message);
+					if (parsed?.message) msg = parsed.message;
+				} catch {
+					msg = e.message;
+				}
+			}
+			payError = msg;
 		} finally {
 			paying = false;
 		}

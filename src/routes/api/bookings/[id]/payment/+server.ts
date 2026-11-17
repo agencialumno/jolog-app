@@ -2,7 +2,7 @@ import { error, json } from '@sveltejs/kit';
 import { Timestamp } from 'firebase-admin/firestore';
 import { requireRole } from '../../../../../lib/server/auth';
 import { adminDb } from '../../../../../lib/server/firebase';
-import { paymentProvider } from '../../../../../lib/server/deps';
+import { paymentProvider, isFakePayments } from '../../../../../lib/server/deps';
 import { jsonBody } from '../../../../../lib/server/http';
 import { effectiveStatus, type BookingDoc } from '../../../../../lib/server/booking/service';
 import type { RequestHandler } from './$types';
@@ -20,8 +20,9 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	const b = snap.data() as BookingDoc;
 	if (effectiveStatus(b) !== 'pending_payment') throw error(409, 'booking not payable');
 	const profile = await db.collection('profiles').doc(u.uid).get();
-	const cpfCnpj = profile.get('cpfCnpj');
-	if (!cpfCnpj) throw error(400, 'cpfCnpj required in profile');
+	const cpfCnpj = profile.get('cpfCnpj') as string | undefined;
+	const isFake = isFakePayments();
+	if (method === 'pix' && !isFake && !cpfCnpj) throw error(400, 'cpfCnpj required in profile');
 	const provider = paymentProvider();
 	const description = NAMES[b.serviceType];
 	const pay = db.collection('payments').doc();
@@ -30,7 +31,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 		const c = await provider.createPixCharge({
 			customer: {
 				name: profile.get('name') || 'Cliente',
-				cpfCnpj,
+				cpfCnpj: cpfCnpj || '00000000000',
 				email: u.email,
 				phone: profile.get('phone') ?? undefined
 			},

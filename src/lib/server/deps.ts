@@ -10,7 +10,9 @@ import type { InvoiceProvider } from './invoices/types';
 const env = process.env;
 const base = () => env.ASAAS_BASE_URL || 'https://api-sandbox.asaas.com/v3';
 
-export const isFakePayments = () => env.PAYMENTS_MODE === 'fake';
+export const isFakePayments = () =>
+	env.PAYMENTS_MODE === 'fake' ||
+	(!env.ASAAS_API_KEY && process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production');
 
 export const paymentProvider = (): PaymentProvider => {
 	if (isFakePayments()) return new FakePaymentProvider();
