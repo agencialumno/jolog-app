@@ -263,6 +263,7 @@ jobs:
           set -eu
           echo "::add-mask::$ANDROID_KEYSTORE_PASSWORD"
           echo "::add-mask::$ANDROID_KEY_PASSWORD"
+          chmod +x gradlew
           ./gradlew assembleRelease bundleRelease \
             -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
             -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
