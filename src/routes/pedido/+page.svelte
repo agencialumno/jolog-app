@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { api } from '../../lib/api';
+	import { api, getAuthUser } from '../../lib/api';
 	import { formatBRL, timeLabel } from '../../lib/ui/dates';
 
 	interface Order {
@@ -17,17 +17,22 @@
 	let order = $state<Order | null>(null);
 	let status = $state<'loading' | 'error' | 'ok'>('loading');
 	let now = $state(Date.now());
+	let paying = $state(false);
+	let payError = $state('');
+
+	async function loadOrder() {
+		try {
+			await getAuthUser();
+			order = await api<Order>(`/api/bookings/${id}`);
+			status = 'ok';
+		} catch {
+			status = 'error';
+		}
+	}
 
 	onMount(() => {
 		const t = setInterval(() => (now = Date.now()), 1000);
-		(async () => {
-			try {
-				order = await api<Order>(`/api/bookings/${id}`);
-				status = 'ok';
-			} catch {
-				status = 'error';
-			}
-		})();
+		loadOrder();
 		return () => clearInterval(t);
 	});
 
@@ -39,6 +44,30 @@
 		const d = new Date(new Date(iso).getTime() - 3 * 3_600_000).toISOString();
 		return `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)} às ${timeLabel(iso)}`;
 	};
+
+	async function goToPayment() {
+		if (paying) return;
+		paying = true;
+		payError = '';
+		try {
+			const res = await api<{ id: string; paymentLink?: string; pixCopiaECola?: string }>(
+				`/api/bookings/${id}/payment`,
+				{
+					method: 'POST',
+					body: JSON.stringify({ method: 'link' })
+				}
+			);
+			if (res.paymentLink) {
+				window.location.href = res.paymentLink;
+			} else {
+				payError = 'Link de pagamento não gerado.';
+			}
+		} catch (e) {
+			payError = 'Não foi possível gerar o link de pagamento. Tente novamente.';
+		} finally {
+			paying = false;
+		}
+	}
 </script>
 
 <section>
@@ -64,15 +93,33 @@
 			{/if}
 			<dt>Total</dt>
 			<dd>{formatBRL(order.priceCents)}</dd>
+			<dt>Status</dt>
+			<dd>
+				{order.status === 'scheduled' || order.status === 'awaiting_contact'
+					? 'Confirmado (Pago)'
+					: order.status === 'pending_payment'
+						? 'Aguardando pagamento'
+						: order.status === 'canceled'
+							? 'Cancelado'
+							: order.status}
+			</dd>
 		</dl>
 		{#if order.status === 'pending_payment'}
 			<p class="notice">
-				Reserva por mais <b>{mmss}</b>. O pagamento ainda não está disponível no app.
+				Reserva garantida por mais <b>{mmss}</b>.
 			</p>
+			{#if payError}
+				<p class="notice error">{payError}</p>
+			{/if}
+			<button class="btn btn-pay" onclick={goToPayment} disabled={paying}>
+				{paying ? 'Carregando…' : 'Ir para o Pagamento'}
+			</button>
+		{:else if order.status === 'scheduled' || order.status === 'awaiting_contact'}
+			<p class="notice success">Pagamento aprovado e agendamento confirmado!</p>
 		{:else if order.status === 'canceled'}
 			<p class="notice" role="status">Este pedido expirou ou foi cancelado.</p>
 		{/if}
-		<a class="btn" href="/">Voltar ao início</a>
+		<a class="btn btn-secondary" href="/">Voltar ao início</a>
 	{/if}
 </section>
 
@@ -98,14 +145,45 @@
 		font-weight: 600;
 	}
 	.notice {
-		background: var(--color-notice);
-		color: var(--color-primary-dark);
-		padding: 10px 14px;
-		border-radius: var(--radius);
-		font-size: 14px;
+		background: #f4f4f6;
+		padding: 12px;
+		border-radius: 8px;
+		font-size: 0.95rem;
+		margin: 14px 0;
+	}
+	.notice.success {
+		background: #d4edda;
+		color: #155724;
+		border: 1px solid #c3e6cb;
+	}
+	.notice.error {
+		background: #f8d7da;
+		color: #721c24;
+		border: 1px solid #f5c6cb;
 	}
 	.btn {
+		display: block;
 		width: 100%;
-		margin-top: 8px;
+		border: none;
+		border-radius: var(--radius-sm);
+		padding: 12px;
+		font-weight: 700;
+		text-align: center;
+		text-decoration: none;
+		font-size: 1rem;
+		cursor: pointer;
+		margin-top: 10px;
+	}
+	.btn-pay {
+		background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+		color: white;
+	}
+	.btn-pay:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	.btn-secondary {
+		background: #e5e5ea;
+		color: var(--color-text);
 	}
 </style>
