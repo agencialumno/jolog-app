@@ -38,11 +38,11 @@ Toda chamada a API envia `Authorization: Bearer <ID token>`; o servidor valida e
 
 ## Secrets do GitHub (Settings > Secrets and variables > Actions)
 
-RELEASE_PLEASE_TOKEN (PAT com permissao de repo), ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_BASE64.
+RELEASE_PLEASE_TOKEN (PAT com permissao de repo); iOS: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_BASE64; Android: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. (`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` so sera necessario quando o upload a Play for automatizado.)
 
 ## Variables do GitHub (builds mobile)
 
-Os workflows `release-ios.yml` e `release-android.yml` embutem no app estas variáveis **públicas** (ficam visíveis no bundle; por isso são _Variables_, não _Secrets_). Cadastre em Settings > Secrets and variables > Actions > **Variables**:
+O workflow `release.yml` (jobs `ios` e `android`) embute no app estas variáveis **públicas** (ficam visíveis no bundle; por isso são _Variables_, não _Secrets_). Cadastre em Settings > Secrets and variables > Actions > **Variables**:
 
 | Variable                      | Onde obter                                                                      |
 | ----------------------------- | ------------------------------------------------------------------------------- |
@@ -54,3 +54,12 @@ Os workflows `release-ios.yml` e `release-android.yml` embutem no app estas vari
 | `PUBLIC_WHATSAPP_NUMBER`      | Número do SAC com DDI e DDD, só dígitos (ex.: `5511999990000`)                  |
 
 O primeiro passo de cada release confere as seis e **falha cedo** listando só os nomes das que estão vazias ou ausentes (nunca os valores). Nunca coloque segredos nessas variáveis.
+
+## Workflow de release (.github/workflows/release.yml)
+
+Dispara em tag `v*` ou manualmente (Actions > Release > Run workflow). Um job `version` calcula **uma vez** a versao (tag sem "v", validada como X.Y.Z; no manual, a do `package.json`) e o build number (`github.run_number`). Os jobs `ios` e `android` rodam em paralelo, sem depender um do outro, e usam os mesmos valores (iOS: `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION`; Android: `versionName`/`versionCode`). Se um falhar, o outro segue.
+
+- **iOS:** assinatura automatica com a chave da API do App Store Connect e envio ao TestFlight.
+- **Android:** gera **APK** (instalar direto no celular) e **AAB** (primeiro upload manual na Play), assinados com a **keystore de release** (secrets `ANDROID_*`), e publica os dois como artifacts por **7 dias** (aba Summary da execucao). **Nada e enviado a Google Play.** O ponto onde o upload entraria esta marcado com um comentario `FUTURO - Google Play` no YAML.
+- **Pre-requisito:** a pasta `android/` precisa estar no repositorio (`bunx cap add android` e commit); o job falha com essa instrucao se faltar.
+- **Atencao:** em repositorio publico, artifacts podem ser baixados por qualquer conta GitHub logada. APK/AAB nao contem a keystore, mas sao o binario do app.
