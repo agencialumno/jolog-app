@@ -17,7 +17,9 @@ export async function authenticate(request: Request): Promise<AuthUser> {
 		const t = await adminAuth().verifyIdToken(m[1], true);
 		const role = t.role === 'cliente' || t.role === 'equipe' || t.role === 'admin' ? t.role : null;
 		return { uid: t.uid, role, email: t.email };
-	} catch {
+	} catch (e) {
+		// Loga so a mensagem (nunca o token) para diagnosticar 401 sem expor nada ao cliente.
+		console.error('verifyIdToken failed:', e instanceof Error ? e.message.slice(0, 300) : 'unknown');
 		throw error(401, 'invalid token');
 	}
 }
