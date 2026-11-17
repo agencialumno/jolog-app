@@ -10,7 +10,7 @@ export const parseRole = (v: unknown): Role | null => (v === 'cliente' || v === 
 export const homeFor = (role: Role): string => (role === 'admin' ? '/painel' : role === 'equipe' ? '/equipe' : '/');
 
 const AUTH_PAGES = ['/entrar', '/cadastrar'];
-const CLIENT_ONLY = ['/limpeza', '/lavanderia', '/vistoria', '/pedidos', '/pedido'];
+const CLIENT_ONLY = ['/limpeza', '/lavanderia', '/vistoria', '/pedidos', '/pedido', '/completar-cadastro'];
 const norm = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p) || '/';
 const under = (path: string, bases: string[]) => bases.some((b) => path === b || path.startsWith(b + '/'));
 

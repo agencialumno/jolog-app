@@ -26,7 +26,7 @@
 		session.ready &&
 			session.role === 'cliente' &&
 			!redirect &&
-			!/^\/(entrar|cadastrar|limpeza|vistoria|lavanderia)/.test(page.url.pathname)
+			!/^\/(entrar|cadastrar|limpeza|vistoria|lavanderia|completar-cadastro)/.test(page.url.pathname)
 	);
 </script>
 

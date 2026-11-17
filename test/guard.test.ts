@@ -8,7 +8,7 @@ describe('decide (guarda de rota)', () => {
 	it('nada decide antes de a sessão estar pronta', () => {
 		expect(decide('/pedidos', { ready: false, role: null })).toBeNull();
 	});
-	it.each(['/limpeza', '/lavanderia', '/vistoria', '/pedidos', '/conta', '/equipe', '/painel'])(
+	it.each(['/limpeza', '/lavanderia', '/vistoria', '/pedidos', '/conta', '/equipe', '/painel', '/completar-cadastro'])(
 		'sem login: %s vai para /entrar com next',
 		(p) => expect(decide(p, out)).toBe(`/entrar?next=${encodeURIComponent(p)}`)
 	);
@@ -18,7 +18,8 @@ describe('decide (guarda de rota)', () => {
 		expect(decide('/pedidos/', out)).toBe('/entrar?next=%2Fpedidos');
 	});
 	it('cliente acessa as telas de cliente e não as de equipe/admin', () => {
-		for (const p of ['/', '/limpeza', '/pedidos', '/conta']) expect(decide(p, as('cliente'))).toBeNull();
+		for (const p of ['/', '/limpeza', '/pedidos', '/conta', '/completar-cadastro'])
+			expect(decide(p, as('cliente'))).toBeNull();
 		expect(decide('/equipe', as('cliente'))).toBe('/');
 		expect(decide('/painel', as('cliente'))).toBe('/');
 	});

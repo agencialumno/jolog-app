@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { authErrorMessage, validateCredentials } from '../auth/errors';
 	import { login, register, session } from '../auth/session.svelte';
@@ -20,8 +21,15 @@
 		if (error) return;
 		busy = true;
 		try {
-			if (signup) await register(email, password, { name, phone });
-			else await login(email, password);
+			if (signup) {
+				await register(email, password, { name, phone });
+				if (session.role) {
+					await goto('/completar-cadastro', { replaceState: true });
+					return;
+				}
+			} else {
+				await login(email, password);
+			}
 			if (!session.role) {
 				error = 'Não conseguimos carregar o seu perfil. Tente novamente.';
 				return;

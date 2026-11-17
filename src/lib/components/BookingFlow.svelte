@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { api, ApiError, getAuthUser } from '../api';
 	import { priceCents, scheduleMinutes } from '../pricing';
 	import { dayLabel, formatBRL, nextDays, timeLabel } from '../ui/dates';
-	import { formatCep, lookupCep } from '../ui/viacep';
 
 	let { service }: { service: 'cleaning' | 'inspection' } = $props();
 
@@ -12,17 +12,24 @@
 		id: string;
 		address: string;
 		condominium: string | null;
+		block?: string | null;
+		apartment?: string | null;
 		bedrooms: 2 | 3;
 	}
-	const STEPS = ['Imóvel', 'Data', 'Endereço', 'Revisar'];
+
+	const STEPS = $derived(
+		service === 'cleaning' ? ['Data e Horário', 'Revisar'] : ['Checklist', 'Data e Horário', 'Revisar']
+	);
 	const days = nextDays(14);
 
 	let step = $state(0);
 	let loading = $state(true);
 	let loadError = $state('');
+
 	let properties = $state<Property[]>([]);
-	let propertyId = $state<string>('new');
+	let propertyId = $state<string>('');
 	let bedrooms = $state<2 | 3>(2);
+
 	let checklist = $state<{ id: string; label: string }[]>([]);
 	let chosen = $state<string[]>([]);
 	let customItem = $state('');
@@ -33,49 +40,34 @@
 	let startsAt = $state('');
 	let strip = $state<Record<string, boolean | undefined>>({});
 
-	let cep = $state('');
-	let street = $state('');
-	let number = $state('');
-	let complement = $state('');
-	let condominium = $state('');
-	let cepMsg = $state('');
-
 	let busy = $state(false);
 	let submitError = $state('');
 
-	const selected = $derived(properties.find((p) => p.id === propertyId) ?? null);
-	const effBedrooms = $derived(selected ? selected.bedrooms : bedrooms);
+	const selected = $derived(properties.find((p) => p.id === propertyId) ?? properties[0] ?? null);
+	const effBedrooms = $derived(bedrooms);
 	const priced = $derived(
 		service === 'cleaning' ? ({ service, bedrooms: effBedrooms } as const) : ({ service } as const)
 	);
 	const total = $derived(priceCents(priced));
 	const minutes = $derived(scheduleMinutes(priced));
-	const newAddress = $derived(
-		[street.trim(), number.trim() && `nº ${number.trim()}`, complement.trim()].filter(Boolean).join(', ')
-	);
 	const checklistOk = $derived(service === 'cleaning' || chosen.length > 0 || customItem.trim().length > 0);
 
-	const canContinue = $derived(
-		step === 0
-			? checklistOk
-			: step === 1
-				? !!startsAt
-				: step === 2
-					? !!selected || (street.trim().length > 2 && number.trim().length > 0)
-					: !busy
-	);
+	const isScheduleStep = $derived(service === 'cleaning' ? step === 0 : step === 1);
+	const isReviewStep = $derived(service === 'cleaning' ? step === 1 : step === 2);
+
+	const canContinue = $derived(isScheduleStep ? !!startsAt : isReviewStep ? !busy : checklistOk);
 
 	onMount(async () => {
 		try {
 			await getAuthUser();
-			try {
-				properties = await api<Property[]>('/api/properties');
-				if (properties.length) propertyId = properties[0].id;
-			} catch (e) {
-				console.warn('Could not load properties, defaulting to new:', e);
-				properties = [];
-				propertyId = 'new';
+			properties = await api<Property[]>('/api/properties');
+			if (properties.length === 0) {
+				await goto(`/completar-cadastro?next=${encodeURIComponent(page.url.pathname)}`, { replaceState: true });
+				return;
 			}
+			propertyId = properties[0].id;
+			bedrooms = properties[0].bedrooms;
+
 			if (service === 'inspection') {
 				try {
 					checklist = await api('/api/checklist');
@@ -83,9 +75,15 @@
 					console.warn('Could not load checklist:', e);
 				}
 			}
+
+			await loadSlots(date);
+			if (slots.length === 0) {
+				await nextFree();
+			}
+			void Promise.all(days.map((d) => (d === date ? null : peek(d))));
 		} catch (err) {
 			console.error('BookingFlow onMount error:', err);
-			loadError = 'Não foi possível carregar os dados. Verifique a conexão e tente de novo.';
+			loadError = 'Não foi possível carregar os dados. Verifique sua conexão e tente novamente.';
 		} finally {
 			loading = false;
 		}
@@ -105,10 +103,12 @@
 			slotsState = 'error';
 		}
 	}
+
 	async function pickDay(d: string) {
 		date = d;
 		await loadSlots(d);
 	}
+
 	async function nextFree() {
 		slotsState = 'loading';
 		for (const d of days) {
@@ -131,75 +131,45 @@
 		slots = [];
 		slotsState = 'idle';
 	}
-	async function searchCep() {
-		cepMsg = '';
-		try {
-			const r = await lookupCep(cep);
-			if (!r) {
-				cepMsg = 'CEP não encontrado. Preencha o endereço manualmente.';
-				return;
-			}
-			street = [r.street, r.district, `${r.city}-${r.state}`].filter(Boolean).join(', ');
-		} catch {
-			cepMsg = 'Busca de CEP indisponível. Preencha o endereço manualmente.';
-		}
-	}
 
-	async function forward() {
-		submitError = '';
-		if (step === 0) {
-			step = 1;
-			await loadSlots(date);
-			if (slots.length === 0) {
-				await nextFree();
-			}
-			void Promise.all(days.map((d) => (d === date ? null : peek(d))));
-			return;
-		}
-		if (step === 1) {
-			step = selected ? 3 : 2;
-			return;
-		}
-		if (step === 2) {
-			step = 3;
-			return;
-		}
-		await submit();
-	}
 	async function peek(d: string) {
 		try {
 			const q = service === 'cleaning' ? `service=cleaning&bedrooms=${effBedrooms}` : 'service=inspection';
 			const free = (await api<{ slots: string[] }>(`/api/availability?date=${d}&${q}`)).slots.length > 0;
 			strip = { ...strip, [d]: free };
 		} catch {
-			/* o chip fica sem ponto */
+			/* ignora */
 		}
 	}
+
+	async function changeBedrooms(b: 2 | 3) {
+		bedrooms = b;
+		await loadSlots(date);
+		void Promise.all(days.map((d) => (d === date ? null : peek(d))));
+	}
+
+	function forward() {
+		submitError = '';
+		if (isReviewStep) {
+			void submit();
+			return;
+		}
+		step += 1;
+	}
+
 	function back() {
-		step = step === 3 && selected ? 1 : step - 1;
+		if (step > 0) step -= 1;
 	}
 
 	async function submit() {
 		busy = true;
 		try {
-			let pid = selected?.id;
-			if (!pid) {
-				const prop = await api<{ id: string }>('/api/properties', {
-					method: 'POST',
-					body: JSON.stringify({
-						address: newAddress,
-						condominium: condominium.trim() || undefined,
-						bedrooms
-					})
-				});
-				pid = prop.id;
-			}
 			const body =
 				service === 'cleaning'
-					? { service, propertyId: pid, startsAt }
+					? { service, propertyId: selected.id, startsAt }
 					: {
 							service,
-							propertyId: pid,
+							propertyId: selected.id,
 							startsAt,
 							items: [
 								...chosen.map((itemId) => ({ itemId })),
@@ -213,8 +183,8 @@
 				e instanceof ApiError && e.status === 409
 					? 'Esse horário acabou de ser reservado. Escolha outro.'
 					: 'Não foi possível concluir o agendamento. Tente novamente.';
-			if (e instanceof ApiError && e.status === 409) {
-				step = 1;
+			if (e instanceof ApiError && e.status === 409 && isReviewStep) {
+				step = service === 'cleaning' ? 0 : 1;
 				await loadSlots(date);
 			}
 		} finally {
@@ -227,6 +197,22 @@
 	<a class="back" href="/">← Início</a>
 	<h1>{service === 'cleaning' ? 'Limpeza' : 'Vistoria de check-in'}</h1>
 
+	{#if selected}
+		<div class="property-badge">
+			<span class="pin" aria-hidden="true">📍</span>
+			<div class="property-details">
+				<small>Imóvel do agendamento</small>
+				<strong>{selected.condominium ? `Condomínio ${selected.condominium}` : selected.address}</strong>
+				<span class="subtext">
+					{[selected.block && `Bloco ${selected.block}`, selected.apartment && `Apto ${selected.apartment}`]
+						.filter(Boolean)
+						.join(' · ') || selected.address}
+				</span>
+			</div>
+			<a href="/completar-cadastro?next={encodeURIComponent(page.url.pathname)}" class="edit-link">Editar</a>
+		</div>
+	{/if}
+
 	<ol class="steps" aria-label="Progresso">
 		{#each STEPS as s, i (s)}
 			<li class:done={i < step} class:now={i === step} aria-current={i === step ? 'step' : undefined}>
@@ -236,40 +222,39 @@
 	</ol>
 
 	{#if loading}
-		<div class="skeleton" style="height:120px"></div>
+		<div class="skeleton" style="height:140px"></div>
 	{:else if loadError}
 		<p class="notice" role="alert">{loadError}</p>
 	{:else}
 		<div class="pane">
-			{#if step === 0}
-				<h2>Qual imóvel?</h2>
-				{#each properties as p (p.id)}
-					<label class="opt"
-						><input type="radio" bind:group={propertyId} value={p.id} />
-						<span>{p.address}{p.condominium ? ` · ${p.condominium}` : ''}<small>{p.bedrooms} quartos</small></span
-						></label
-					>
+			{#if service === 'inspection' && step === 0}
+				<h2>O que checar na vistoria?</h2>
+				{#each checklist as c (c.id)}
+					<label class="opt">
+						<input type="checkbox" bind:group={chosen} value={c.id} />
+						<span>{c.label}</span>
+					</label>
 				{/each}
-				<label class="opt"
-					><input type="radio" bind:group={propertyId} value="new" />
-					<span>Novo imóvel</span></label
-				>
-				{#if propertyId === 'new'}
-					<fieldset>
-						<legend>Quartos</legend>
-						<label class="opt"><input type="radio" bind:group={bedrooms} value={2} /><span>2 quartos</span></label>
-						<label class="opt"><input type="radio" bind:group={bedrooms} value={3} /><span>3 quartos</span></label>
-					</fieldset>
+				<label class="field">
+					Outro item personalizado (opcional)
+					<input bind:value={customItem} maxlength="120" placeholder="ex.: Checar controle do ar-condicionado" />
+				</label>
+				{#if !checklistOk}<p class="hint">Escolha pelo menos um item para vistoriar.</p>{/if}
+			{:else if isScheduleStep}
+				{#if service === 'cleaning'}
+					<div class="bedrooms-selector">
+						<span class="field-label">Apartamento:</span>
+						<div class="bedrooms-chips">
+							<button type="button" class="chip-btn" class:on={bedrooms === 2} onclick={() => changeBedrooms(2)}>
+								2 quartos (2h)
+							</button>
+							<button type="button" class="chip-btn" class:on={bedrooms === 3} onclick={() => changeBedrooms(3)}>
+								3 quartos (3h)
+							</button>
+						</div>
+					</div>
 				{/if}
-				{#if service === 'inspection'}
-					<h2>O que checar?</h2>
-					{#each checklist as c (c.id)}
-						<label class="opt"><input type="checkbox" bind:group={chosen} value={c.id} /><span>{c.label}</span></label>
-					{/each}
-					<label class="field">Outro item (opcional)<input bind:value={customItem} maxlength="120" /></label>
-					{#if !checklistOk}<p class="hint">Escolha pelo menos um item.</p>{/if}
-				{/if}
-			{:else if step === 1}
+
 				<h2>Qual dia e horário?</h2>
 				<div class="strip" role="tablist" aria-label="Dias">
 					{#each days as d (d)}
@@ -287,7 +272,9 @@
 						</button>
 					{/each}
 				</div>
+
 				<button type="button" class="ghost" onclick={nextFree}>Próximo horário livre</button>
+
 				{#if slotsState === 'loading'}
 					<div class="grid">
 						{#each [1, 2, 3, 4, 5, 6] as n (n)}<span class="skeleton slot"></span>{/each}
@@ -296,50 +283,40 @@
 					<p class="notice" role="alert">Não foi possível carregar os horários.</p>
 					<button type="button" class="ghost" onclick={() => loadSlots(date)}>Tentar de novo</button>
 				{:else if slots.length === 0}
-					<p class="empty">Nenhum horário livre neste dia. Escolha outro dia.</p>
+					<p class="empty">Nenhum horário livre neste dia. Escolha outro dia acima.</p>
 				{:else}
 					<div class="grid">
 						{#each slots as s (s)}
-							<button type="button" class="slot" class:on={s === startsAt} onclick={() => (startsAt = s)}
-								>{timeLabel(s)}</button
-							>
+							<button type="button" class="slot" class:on={s === startsAt} onclick={() => (startsAt = s)}>
+								{timeLabel(s)}
+							</button>
 						{/each}
 					</div>
 				{/if}
-			{:else if step === 2}
-				<h2>Endereço do imóvel</h2>
-				<label class="field"
-					>CEP
-					<input
-						inputmode="numeric"
-						autocomplete="postal-code"
-						value={cep}
-						oninput={(e) => (cep = formatCep(e.currentTarget.value))}
-						onblur={searchCep}
-					/></label
-				>
-				{#if cepMsg}<p class="hint">{cepMsg}</p>{/if}
-				<label class="field">Rua e bairro<input bind:value={street} autocomplete="street-address" /></label>
-				<label class="field">Número<input bind:value={number} inputmode="numeric" /></label>
-				<label class="field">Complemento (apto, bloco)<input bind:value={complement} /></label>
-				<label class="field">Condomínio (opcional)<input bind:value={condominium} /></label>
-			{:else}
-				<h2>Revise seu pedido</h2>
+			{:else if isReviewStep}
+				<h2>Revise seu agendamento</h2>
 				<dl class="sum">
 					<dt>Serviço</dt>
 					<dd>{service === 'cleaning' ? `Limpeza · ${effBedrooms} quartos` : 'Vistoria de check-in'}</dd>
+					<dt>Imóvel</dt>
+					<dd>
+						{selected?.condominium ? `Cond. ${selected.condominium}` : ''}
+						{[selected?.block && `Bloco ${selected.block}`, selected?.apartment && `Apto ${selected.apartment}`]
+							.filter(Boolean)
+							.join(' - ')}
+					</dd>
+					<dt>Endereço</dt>
+					<dd>{selected?.address}</dd>
 					<dt>Data</dt>
 					<dd>{dayLabel(date).weekday} {date.split('-').reverse().join('/')} às {timeLabel(startsAt)}</dd>
 					<dt>Duração</dt>
-					<dd>{minutes! / 60} h</dd>
-					<dt>Endereço</dt>
-					<dd>{selected ? selected.address : newAddress}</dd>
+					<dd>{minutes! / 60} horas</dd>
 					{#if service === 'inspection'}
 						<dt>Itens</dt>
 						<dd>{chosen.length + (customItem.trim() ? 1 : 0)} selecionado(s)</dd>
 					{/if}
 				</dl>
-				<p class="notice">O horário fica reservado por 15 minutos após confirmar, até o pagamento.</p>
+				<p class="notice">O horário ficará reservado por 15 minutos para você realizar o pagamento.</p>
 				{#if submitError}<p class="notice err" role="alert">{submitError}</p>{/if}
 			{/if}
 		</div>
@@ -347,9 +324,9 @@
 		<footer class="bar">
 			<div class="tot"><small>Total</small><b>{formatBRL(total)}</b></div>
 			{#if step > 0}<button type="button" class="ghost" onclick={back} disabled={busy}>Voltar</button>{/if}
-			<button type="button" onclick={forward} disabled={!canContinue}
-				>{step === 3 ? (busy ? 'Aguarde…' : 'Confirmar') : 'Continuar'}</button
-			>
+			<button type="button" onclick={forward} disabled={!canContinue}>
+				{isReviewStep ? (busy ? 'Aguarde…' : 'Confirmar') : 'Continuar'}
+			</button>
 		</footer>
 	{/if}
 </section>
@@ -362,13 +339,57 @@
 		display: inline-block;
 		margin-bottom: 8px;
 	}
+	.property-badge {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 12px 14px;
+		background: rgba(173, 13, 60, 0.05);
+		border: 1.5px solid rgba(173, 13, 60, 0.15);
+		border-radius: var(--radius);
+		margin: 12px 0 16px;
+	}
+	.pin {
+		font-size: 1.3rem;
+	}
+	.property-details {
+		display: grid;
+		gap: 2px;
+		flex: 1;
+		min-width: 0;
+	}
+	.property-details small {
+		font-size: 11px;
+		color: var(--color-primary);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+	}
+	.property-details strong {
+		font-size: 14px;
+		color: var(--color-text);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.subtext {
+		font-size: 12px;
+		color: var(--color-muted);
+	}
+	.edit-link {
+		color: var(--color-primary);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: underline;
+		padding: 6px;
+	}
 	.steps {
 		display: flex;
 		list-style: none;
 		padding: 0;
-		margin: 14px 0;
-		gap: 4px;
-		font-size: 11px;
+		margin: 8px 0 16px;
+		gap: 6px;
+		font-size: 12px;
 		font-weight: 600;
 		color: var(--color-muted);
 	}
@@ -377,7 +398,7 @@
 		display: grid;
 		gap: 4px;
 		justify-items: center;
-		border-top: 4px solid var(--color-border);
+		border-top: 3.5px solid var(--color-border);
 		padding-top: 6px;
 	}
 	.steps li span {
@@ -390,8 +411,40 @@
 	}
 	.pane {
 		display: grid;
-		gap: 10px;
+		gap: 12px;
 		padding-bottom: 8px;
+	}
+	.bedrooms-selector {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		margin-bottom: 4px;
+	}
+	.field-label {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--color-muted);
+	}
+	.bedrooms-chips {
+		display: flex;
+		gap: 8px;
+	}
+	.chip-btn {
+		min-height: 36px;
+		padding: 0 12px;
+		font-size: 13px;
+		font-weight: 600;
+		border: 1.5px solid var(--color-border);
+		border-radius: 999px;
+		background: var(--color-surface);
+		color: var(--color-text);
+		box-shadow: none;
+	}
+	.chip-btn.on {
+		background: var(--gradient-btn);
+		color: #fff;
+		border-color: transparent;
 	}
 	.opt {
 		display: flex;
@@ -402,23 +455,13 @@
 		border: 1.5px solid var(--color-border);
 		border-radius: var(--radius);
 		background: var(--color-surface);
+		cursor: pointer;
 	}
 	.opt input {
 		min-height: 0;
 		width: 20px;
 		height: 20px;
 		accent-color: var(--color-primary);
-	}
-	.opt small {
-		display: block;
-		color: var(--color-muted);
-	}
-	fieldset {
-		border: 0;
-		padding: 0;
-		margin: 0;
-		display: grid;
-		gap: 8px;
 	}
 	.field {
 		display: grid;
