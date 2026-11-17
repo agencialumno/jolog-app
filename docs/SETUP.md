@@ -39,3 +39,18 @@ Toda chamada a API envia `Authorization: Bearer <ID token>`; o servidor valida e
 ## Secrets do GitHub (Settings > Secrets and variables > Actions)
 
 RELEASE_PLEASE_TOKEN (PAT com permissao de repo), ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_BASE64.
+
+## Variables do GitHub (builds mobile)
+
+Os workflows `release-ios.yml` e `release-android.yml` embutem no app estas variáveis **públicas** (ficam visíveis no bundle; por isso são _Variables_, não _Secrets_). Cadastre em Settings > Secrets and variables > Actions > **Variables**:
+
+| Variable                      | Onde obter                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------- |
+| `PUBLIC_FIREBASE_API_KEY`     | Firebase Console > Configurações do projeto > Seus apps (app Web) > `apiKey`    |
+| `PUBLIC_FIREBASE_AUTH_DOMAIN` | Mesmo lugar: `authDomain`                                                       |
+| `PUBLIC_FIREBASE_PROJECT_ID`  | Mesmo lugar: `projectId`                                                        |
+| `PUBLIC_FIREBASE_APP_ID`      | Mesmo lugar: `appId`                                                            |
+| `PUBLIC_API_BASE_URL`         | URL de produção do Vercel, sem barra final (ex.: `https://seu-projeto.vercel.app`) |
+| `PUBLIC_WHATSAPP_NUMBER`      | Número do SAC com DDI e DDD, só dígitos (ex.: `5511999990000`)                  |
+
+O primeiro passo de cada release confere as seis e **falha cedo** listando só os nomes das que estão vazias ou ausentes (nunca os valores). Nunca coloque segredos nessas variáveis.
