@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { session } from '../lib/auth/session.svelte';
+	import { sacUrl } from '../lib/whatsapp';
+
 	const services = [
 		{
 			href: '/limpeza',
@@ -19,12 +22,19 @@
 			color: 'var(--color-inspection)'
 		}
 	];
+	const sac = sacUrl();
 </script>
 
-<main style="max-width: 480px; margin: 0 auto; padding: 20px;">
+<main style="max-width: 480px; margin: 0 auto; padding: 20px 20px 96px;">
 	<img src="/logo.png" alt="Grupo Jolog" width="120" />
 	<h1>O que você precisa?</h1>
 	<p>Cada serviço é agendado e pago separadamente.</p>
+	{#if !session.role}
+		<p>
+			<a class="btn" href="/entrar">Entrar</a>
+			<a href="/cadastrar" style="margin-left: 12px; color: var(--color-primary); font-weight: 600">Criar conta</a>
+		</p>
+	{/if}
 	{#each services as s}
 		<a
 			href={s.href}
@@ -34,5 +44,5 @@
 			<span>{s.desc}</span>
 		</a>
 	{/each}
-	<a class="btn" href="/sac">SAC pelo WhatsApp</a>
+	{#if sac}<a class="btn" href={sac} target="_blank" rel="noopener noreferrer">SAC pelo WhatsApp</a>{/if}
 </main>
