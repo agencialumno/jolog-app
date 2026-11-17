@@ -2,6 +2,9 @@ import { applicationDefault, cert, getApps, initializeApp, type App } from 'fire
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
+/** Variaveis de ambiente guardam a chave em uma linha com \n literal; converte para quebras reais. */
+export const normalizePrivateKey = (k?: string) => k?.replace(/\\n/g, '\n');
+
 /** Admin SDK. Em teste com emulador (FIRESTORE_EMULATOR_HOST) so o projectId e necessario. */
 function app(): App {
 	const existing = getApps()[0];

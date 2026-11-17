@@ -7,6 +7,8 @@ import { defineConfig } from 'vitest/config';
 const mobile = process.env.BUILD_TARGET === 'mobile';
 
 export default defineConfig({
+	// Endpoints so-web (ex.: /api/diagnostics) respondem 404 no build mobile.
+	define: { __WEB_BUILD__: JSON.stringify(!mobile) },
 	// Variaveis publicas (PUBLIC_*) chegam ao app via import.meta.env; segredos nunca usam este prefixo.
 	envPrefix: ['VITE_', 'PUBLIC_'],
 	plugins: [
