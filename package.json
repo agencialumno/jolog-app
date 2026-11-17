@@ -42,5 +42,11 @@
 		"firebase": "^13.2.0",
 		"firebase-admin": "^14.5.0"
 	},
-	"packageManager": "bun@1.4.4"
+	"packageManager": "bun@1.4.4",
+	"engines": {
+		"node": "22.x"
+	},
+	"overrides": {
+		"jose": "5.10.0"
+	}
 }
