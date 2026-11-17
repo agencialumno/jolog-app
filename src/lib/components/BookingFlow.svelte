@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
 	import { api, ApiError, getAuthUser } from '../api';
-	import { firebaseAuth, firestore } from '../firebase-client';
 	import { priceCents, scheduleMinutes } from '../pricing';
 	import { dayLabel, formatBRL, nextDays, timeLabel } from '../ui/dates';
 	import { formatCep, lookupCep } from '../ui/viacep';
@@ -69,20 +67,25 @@
 
 	onMount(async () => {
 		try {
-			const user = await getAuthUser();
-			if (!user) throw new Error('no user');
-			const snap = await getDocs(query(collection(firestore(), 'properties'), where('ownerId', '==', user.uid)));
-			properties = snap.docs.map((d) => ({
-				id: d.id,
-				address: d.get('address') as string,
-				condominium: (d.get('condominium') as string) ?? null,
-				bedrooms: d.get('bedrooms') as 2 | 3
-			}));
-			if (properties.length) propertyId = properties[0].id;
-			if (service === 'inspection') checklist = await api('/api/checklist');
+			await getAuthUser();
+			try {
+				properties = await api<Property[]>('/api/properties');
+				if (properties.length) propertyId = properties[0].id;
+			} catch (e) {
+				console.warn('Could not load properties, defaulting to new:', e);
+				properties = [];
+				propertyId = 'new';
+			}
+			if (service === 'inspection') {
+				try {
+					checklist = await api('/api/checklist');
+				} catch (e) {
+					console.warn('Could not load checklist:', e);
+				}
+			}
 		} catch (err) {
 			console.error('BookingFlow onMount error:', err);
-			loadError = 'Não foi possível carregar seus dados. Verifique a conexão e tente de novo.';
+			loadError = 'Não foi possível carregar os dados. Verifique a conexão e tente de novo.';
 		} finally {
 			loading = false;
 		}
@@ -181,14 +184,15 @@
 		try {
 			let pid = selected?.id;
 			if (!pid) {
-				const uid = firebaseAuth().currentUser!.uid;
-				const ref = await addDoc(collection(firestore(), 'properties'), {
-					ownerId: uid,
-					address: newAddress,
-					condominium: condominium.trim() || null,
-					bedrooms
+				const prop = await api<{ id: string }>('/api/properties', {
+					method: 'POST',
+					body: JSON.stringify({
+						address: newAddress,
+						condominium: condominium.trim() || undefined,
+						bedrooms
+					})
 				});
-				pid = ref.id;
+				pid = prop.id;
 			}
 			const body =
 				service === 'cleaning'
