@@ -31,10 +31,10 @@
 </script>
 
 <div class="safe">
-	<header class="brand">
-		<img src="/logo.png" alt="Grupo Jolog" />
-	</header>
 	<div class="card">
+		<div class="brand">
+			<img src="/logo.png" alt="Grupo Jolog" />
+		</div>
 		{#if session.ready && !redirect}
 			{@render children()}
 		{:else}
@@ -47,29 +47,26 @@
 <style>
 	.safe {
 		min-height: 100vh;
-		padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 16px);
+		padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
 		max-width: 560px;
 		margin: 0 auto;
 	}
 	.brand {
 		display: flex;
 		justify-content: center;
-		padding: 20px 0 16px;
+		padding: 4px 0 20px;
 	}
 	.brand img {
-		height: 56px;
+		height: 76px;
 		width: auto;
-		max-width: 70%;
+		max-width: 85%;
 		object-fit: contain;
-		background: #fff;
-		border-radius: var(--radius);
-		padding: 8px 16px;
 	}
 	.card {
 		background: var(--color-bg);
 		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow);
-		padding: 24px 20px;
+		padding: 28px 22px;
 		margin-bottom: 96px;
 		min-height: 50vh;
 	}

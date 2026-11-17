@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { session } from '../lib/auth/session.svelte';
 	import { api } from '../lib/api';
 	import { PRICES } from '../lib/pricing';
@@ -14,7 +13,7 @@
 			href: string;
 			title: string;
 			desc: string;
-			from: number;
+			priceLabel: string;
 			color: string;
 			icon: string;
 			query: string | null;
@@ -25,7 +24,7 @@
 			href: '/limpeza',
 			title: 'Limpeza',
 			desc: 'Apartamento de 2 ou 3 quartos, sem lavagem.',
-			from: PRICES.cleaning2BedroomsCents,
+			priceLabel: `a partir de ${formatBRL(PRICES.cleaning2BedroomsCents)}`,
 			color: 'var(--color-cleaning)',
 			icon: 'M4 20h16M7 20V9l5-5 5 5v11M10 20v-5h4v5',
 			query: 'service=cleaning&bedrooms=2',
@@ -35,7 +34,7 @@
 			href: '/lavanderia',
 			title: 'Lavanderia',
 			desc: 'Lavar, secar e guardar. Você escolhe o dia e a Jolog entra em contato.',
-			from: PRICES.laundryPerCycleCents,
+			priceLabel: `${formatBRL(PRICES.laundryPerCycleCents)} por ciclo`,
 			color: 'var(--color-laundry)',
 			icon: 'M5 3h14v18H5zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 6h.01M11 6h.01',
 			query: null,
@@ -45,7 +44,7 @@
 			href: '/vistoria',
 			title: 'Vistoria de check-in',
 			desc: 'Não é limpeza completa: você escolhe o que checar.',
-			from: PRICES.inspectionCents,
+			priceLabel: formatBRL(PRICES.inspectionCents),
 			color: 'var(--color-inspection)',
 			icon: 'M9 5h6M9 3h6v4H9zM6 5H5v16h14V5h-1M9 13l2 2 4-4',
 			query: 'service=inspection',
@@ -69,8 +68,11 @@
 			s.preview = 'error';
 		}
 	}
-	onMount(() => {
-		if (session.role === 'cliente') services.forEach(load);
+
+	$effect(() => {
+		if (session.ready && session.role === 'cliente') {
+			services.forEach(load);
+		}
 	});
 </script>
 
@@ -95,7 +97,7 @@
 			<span class="body">
 				<strong>{s.title}</strong>
 				<span class="desc">{s.desc}</span>
-				<span class="from">a partir de {formatBRL(s.from)}{s.title === 'Lavanderia' ? ' por ciclo' : ''}</span>
+				<span class="from">{s.priceLabel}</span>
 				{#if s.query}
 					<span class="chips" aria-label="Disponibilidade dos próximos dias">
 						{#if s.preview === 'loading'}

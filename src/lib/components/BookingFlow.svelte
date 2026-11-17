@@ -93,7 +93,7 @@
 		try {
 			const q = service === 'cleaning' ? `service=cleaning&bedrooms=${effBedrooms}` : 'service=inspection';
 			slots = (await api<{ slots: string[] }>(`/api/availability?date=${d}&${q}`)).slots;
-			strip[d] = slots.length > 0;
+			strip = { ...strip, [d]: slots.length > 0 };
 			slotsState = 'idle';
 		} catch {
 			slotsState = 'error';
@@ -109,7 +109,7 @@
 			try {
 				const q = service === 'cleaning' ? `service=cleaning&bedrooms=${effBedrooms}` : 'service=inspection';
 				const r = await api<{ slots: string[] }>(`/api/availability?date=${d}&${q}`);
-				strip[d] = r.slots.length > 0;
+				strip = { ...strip, [d]: r.slots.length > 0 };
 				if (r.slots.length) {
 					date = d;
 					slots = r.slots;
@@ -144,7 +144,7 @@
 		if (step === 0) {
 			step = 1;
 			await loadSlots(date);
-			void Promise.all(days.slice(0, 7).map((d) => (d === date ? null : peek(d))));
+			void Promise.all(days.map((d) => (d === date ? null : peek(d))));
 			return;
 		}
 		if (step === 1) {
@@ -160,7 +160,8 @@
 	async function peek(d: string) {
 		try {
 			const q = service === 'cleaning' ? `service=cleaning&bedrooms=${effBedrooms}` : 'service=inspection';
-			strip[d] = (await api<{ slots: string[] }>(`/api/availability?date=${d}&${q}`)).slots.length > 0;
+			const free = (await api<{ slots: string[] }>(`/api/availability?date=${d}&${q}`)).slots.length > 0;
+			strip = { ...strip, [d]: free };
 		} catch {
 			/* o chip fica sem ponto */
 		}

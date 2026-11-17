@@ -14,11 +14,18 @@ export class ApiError extends Error {
 export async function api<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
 	const user = firebaseAuth().currentUser;
 	if (!user) throw new ApiError(401, 'not signed in');
-	const token = await user.getIdToken();
-	const headers = new Headers(init.headers);
-	headers.set('Authorization', `Bearer ${token}`);
-	if (typeof init.body === 'string') headers.set('Content-Type', 'application/json');
-	const res = await fetch((env.PUBLIC_API_BASE_URL ?? '') + path, { ...init, headers });
+	let token = await user.getIdToken();
+	const makeHeaders = (t: string) => {
+		const h = new Headers(init.headers);
+		h.set('Authorization', `Bearer ${t}`);
+		if (typeof init.body === 'string') h.set('Content-Type', 'application/json');
+		return h;
+	};
+	let res = await fetch((env.PUBLIC_API_BASE_URL ?? '') + path, { ...init, headers: makeHeaders(token) });
+	if (res.status === 403) {
+		token = await user.getIdToken(true);
+		res = await fetch((env.PUBLIC_API_BASE_URL ?? '') + path, { ...init, headers: makeHeaders(token) });
+	}
 	if (!res.ok) throw new ApiError(res.status, await res.text());
 	return res.headers.get('content-type')?.includes('json') ? ((await res.json()) as T) : (undefined as T);
 }

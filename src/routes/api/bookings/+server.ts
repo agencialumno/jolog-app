@@ -13,14 +13,14 @@ export const GET: RequestHandler = async ({ request }) => {
 	const q =
 		u.role === 'admin'
 			? col.orderBy('createdAt', 'desc')
-			: col.where(u.role === 'cliente' ? 'customerId' : 'assignedStaff', '==', u.uid).orderBy('createdAt', 'desc');
+			: col.where(u.role === 'cliente' ? 'customerId' : 'assignedStaff', '==', u.uid);
 	const snaps = await q.limit(100).get();
-	return json(
-		snaps.docs.map((d) => {
-			const b = d.data() as BookingDoc;
-			return { id: d.id, ...serialize(b) };
-		})
-	);
+	const list = snaps.docs.map((d) => {
+		const b = d.data() as BookingDoc;
+		return { id: d.id, ...serialize(b), _createdAt: b.createdAt?.toMillis?.() ?? 0 };
+	});
+	if (u.role !== 'admin') list.sort((a, b) => b._createdAt - a._createdAt);
+	return json(list.map(({ _createdAt: _, ...rest }) => rest));
 };
 
 export const POST: RequestHandler = async ({ request }) => {
