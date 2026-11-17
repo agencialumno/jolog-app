@@ -10,7 +10,7 @@ export const parseRole = (v: unknown): Role | null => (v === 'cliente' || v === 
 export const homeFor = (role: Role): string => (role === 'admin' ? '/painel' : role === 'equipe' ? '/equipe' : '/');
 
 const AUTH_PAGES = ['/entrar', '/cadastrar'];
-const CLIENT_ONLY = ['/limpeza', '/lavanderia', '/vistoria', '/pedidos'];
+const CLIENT_ONLY = ['/limpeza', '/lavanderia', '/vistoria', '/pedidos', '/pedido'];
 const norm = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p) || '/';
 const under = (path: string, bases: string[]) => bases.some((b) => path === b || path.startsWith(b + '/'));
 
@@ -34,7 +34,8 @@ export function decide(rawPath: string, s: GuardState, next?: string | null): st
 	const isHome = path === '/';
 
 	if (!role) {
-		if (isAuthPage || isHome) return null;
+		if (isAuthPage) return null;
+		if (isHome) return '/entrar';
 		if (isClientOnly || isAccount || path.startsWith('/equipe') || path.startsWith('/painel'))
 			return `/entrar?next=${encodeURIComponent(path)}`;
 		return null;

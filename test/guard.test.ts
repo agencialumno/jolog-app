@@ -13,7 +13,8 @@ describe('decide (guarda de rota)', () => {
 		(p) => expect(decide(p, out)).toBe(`/entrar?next=${encodeURIComponent(p)}`)
 	);
 	it('sem login: home e telas de auth são públicas; barra final é normalizada', () => {
-		for (const p of ['/', '/entrar', '/cadastrar']) expect(decide(p, out)).toBeNull();
+		for (const p of ['/entrar', '/cadastrar']) expect(decide(p, out)).toBeNull();
+		expect(decide('/', out)).toBe('/entrar');
 		expect(decide('/pedidos/', out)).toBe('/entrar?next=%2Fpedidos');
 	});
 	it('cliente acessa as telas de cliente e não as de equipe/admin', () => {
