@@ -23,7 +23,10 @@
 		if (redirect) void goto(redirect, { replaceState: true });
 	});
 	const showNav = $derived(
-		session.ready && session.role === 'cliente' && !redirect && !/^\/(entrar|cadastrar)/.test(page.url.pathname)
+		session.ready &&
+			session.role === 'cliente' &&
+			!redirect &&
+			!/^\/(entrar|cadastrar|limpeza|vistoria|lavanderia)/.test(page.url.pathname)
 	);
 </script>
 
