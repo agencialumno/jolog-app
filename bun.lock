@@ -8,8 +8,7 @@
         "@capacitor/android": "^8.6.2",
         "@capacitor/core": "^8.6.0",
         "@capacitor/ios": "^8.6.2",
-        "@fontsource/barlow-condensed": "^5.3.0",
-        "@fontsource/inter": "^5.3.0",
+        "@fontsource/montserrat": "^5.3.0",
         "@vercel/blob": "^2.8.2",
         "firebase": "^13.2.0",
         "firebase-admin": "^14.5.0",
@@ -218,9 +217,7 @@
 
     "@firebase/webchannel-wrapper": ["@firebase/webchannel-wrapper@1.0.7", "", {}, "sha512-phBFwieDLvkZGYN9CE9ZFNEIoBVksprzsnCzQejCmCHtgwCXReeuRpoEGN9C4EbhONztv8NRV1tau6Rb9pONwQ=="],
 
-    "@fontsource/barlow-condensed": ["@fontsource/barlow-condensed@5.3.0", "", {}, "sha512-RA7MmIx0v3eQ6Gcf74qLVLOwLB0GpPOzx+eU9iG/AmCnSJGcIWYeU8y6CEMGZ210MGwGg5CZhzLkkvyZdTTk1g=="],
-
-    "@fontsource/inter": ["@fontsource/inter@5.3.0", "", {}, "sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g=="],
+    "@fontsource/montserrat": ["@fontsource/montserrat@5.3.0", "", {}, "sha512-iQPDtZOnmM5ih4JBGaMSXisRap0ixb9bAUw2hDtY7EjVfaqiiNlKtVuJl9XclxUwtwMMHNcWXfQR6zI9x05+Tg=="],
 
     "@google-cloud/cloud-sql-connector": ["@google-cloud/cloud-sql-connector@1.12.1", "", { "dependencies": { "@google-cloud/sql": "^0.25.0", "@googleapis/sqladmin": "^38.1.1", "@grpc/grpc-js": "^1.14.5", "gaxios": "^8.1.0", "google-auth-library": "^11.1.0", "p-throttle": "^8.1.1" } }, "sha512-Vilc4J0L+rU+4yjxZpBFn8+bvPoibfcnP4cAAFUsON/GiT0p9qwqLKh7J2q4DaG8WnAgesfn/F2Hb+CkEZn3VA=="],
 

@@ -1,8 +1,9 @@
 <script lang="ts">
-	import '@fontsource/barlow-condensed/600.css';
-	import '@fontsource/barlow-condensed/700.css';
-	import '@fontsource/inter/400.css';
-	import '@fontsource/inter/600.css';
+	import '@fontsource/montserrat/400.css';
+	import '@fontsource/montserrat/500.css';
+	import '@fontsource/montserrat/600.css';
+	import '@fontsource/montserrat/700.css';
+	import '@fontsource/montserrat/800.css';
 	import '../lib/styles/tokens.css';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -27,18 +28,51 @@
 </script>
 
 <div class="safe">
-	{#if session.ready && !redirect}
-		{@render children()}
-		{#if showNav}<BottomNav />{/if}
-	{:else}
-		<p class="loading" role="status">Carregando…</p>
-	{/if}
+	<header class="brand">
+		<img src="/logo.png" alt="Grupo Jolog" />
+	</header>
+	<div class="card">
+		{#if session.ready && !redirect}
+			{@render children()}
+		{:else}
+			<p class="loading" role="status">Carregando…</p>
+		{/if}
+	</div>
+	{#if session.ready && !redirect && showNav}<BottomNav />{/if}
 </div>
 
 <style>
+	.safe {
+		min-height: 100vh;
+		padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 16px);
+		max-width: 560px;
+		margin: 0 auto;
+	}
+	.brand {
+		display: flex;
+		justify-content: center;
+		padding: 20px 0 16px;
+	}
+	.brand img {
+		height: 56px;
+		width: auto;
+		max-width: 70%;
+		object-fit: contain;
+		background: #fff;
+		border-radius: var(--radius);
+		padding: 8px 16px;
+	}
+	.card {
+		background: var(--color-bg);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow);
+		padding: 24px 20px;
+		margin-bottom: 96px;
+		min-height: 50vh;
+	}
 	.loading {
 		text-align: center;
-		margin-top: 40vh;
-		color: var(--color-secondary);
+		margin-top: 20vh;
+		color: var(--color-muted);
 	}
 </style>

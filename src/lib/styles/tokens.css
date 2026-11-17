@@ -1,17 +1,28 @@
+/* Identidade extraida do CSS do gerador de propostas da Jolog (Montserrat, vinho). */
 :root {
-	--color-primary: #d2002b;
-	--color-primary-dark: #a80022;
-	--color-secondary: #717171;
+	--color-primary: #ad0d3c;
+	--color-primary-dark: #7a0929;
+	--color-primary-light: #d63a63;
+	--color-secondary: #545454;
 	--color-text: #2b2b2b;
+	--color-muted: #6b6b6b;
 	--color-bg: #ffffff;
-	--color-surface: #f4f4f4;
-	--color-border: #e0e0e0;
-	--color-cleaning: #d2002b;
-	--color-laundry: #717171;
-	--color-inspection: #2b2b2b;
-	--font-display: 'Barlow Condensed', 'Bebas Neue', Oswald, sans-serif;
-	--font-body: 'Inter', system-ui, sans-serif;
+	--color-surface: #f4f4f6;
+	--color-border: #e5e5ea;
+	--color-notice: #edd6dc;
+	--color-ok: #1f9d55;
+	--color-full: #b0b0b8;
+	--color-cleaning: #ad0d3c;
+	--color-laundry: #545454;
+	--color-inspection: #7a0929;
+	--gradient-bg: linear-gradient(160deg, #ad0d3c 0%, #7a0929 45%, #3a3a3a 100%);
+	--gradient-btn: linear-gradient(120deg, #ad0d3c, #7a0929);
+	--font-display: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+	--font-body: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+	--radius-lg: 24px;
 	--radius: 14px;
+	--radius-sm: 10px;
+	--shadow: 0 20px 50px rgba(173, 13, 60, 0.15);
 }
 * {
 	box-sizing: border-box;
@@ -19,42 +30,85 @@
 html,
 body {
 	margin: 0;
-	background: var(--color-bg);
+	min-height: 100vh;
 	color: var(--color-text);
 	font-family: var(--font-body);
+}
+body {
+	background: var(--gradient-bg);
+	background-attachment: fixed;
 }
 h1,
 h2,
 h3 {
 	font-family: var(--font-display);
-	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.02em;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	color: var(--color-primary);
 	margin: 0;
-}
-.safe {
-	padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 button,
 a.btn {
-	min-height: 44px;
+	min-height: 48px;
 	border-radius: var(--radius);
 	border: 0;
 	padding: 0 20px;
-	font: 600 16px var(--font-body);
-	background: var(--color-primary);
+	font: 700 16px var(--font-body);
+	background: var(--gradient-btn);
 	color: #fff;
 	cursor: pointer;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	text-decoration: none;
+	box-shadow: 0 10px 24px rgba(173, 13, 60, 0.28);
+	transition:
+		transform 0.12s ease,
+		box-shadow 0.12s ease;
 }
 button:hover,
 a.btn:hover {
-	background: var(--color-primary-dark);
+	transform: translateY(-1px);
+}
+button:active,
+a.btn:active {
+	transform: none;
+}
+button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	transform: none;
+}
+input,
+select,
+textarea {
+	min-height: 48px;
+	padding: 0 14px;
+	border: 1.5px solid var(--color-border);
+	border-radius: var(--radius);
+	background: var(--color-surface);
+	font: 400 16px var(--font-body);
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+input:focus,
+select:focus,
+textarea:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 4px rgba(173, 13, 60, 0.12);
+	background: #fff;
 }
 :focus-visible {
-	outline: 3px solid var(--color-secondary);
+	outline: 3px solid var(--color-primary);
 	outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+	}
 }
