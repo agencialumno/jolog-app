@@ -65,6 +65,12 @@
 			</button>
 		</div>
 		{#if error}<p class="error" role="alert">{error}</p>{/if}
+		{#if signup}
+			<p class="terms-notice">
+				Ao criar uma conta, você concorda com nossos <a href="/termos">Termos de Uso</a> e
+				<a href="/privacidade">Política de Privacidade</a>.
+			</p>
+		{/if}
 		<button type="submit" disabled={busy}>{busy ? 'Aguarde…' : signup ? 'Criar conta' : 'Entrar'}</button>
 	</form>
 	<p class="alt">
@@ -74,6 +80,19 @@
 </main>
 
 <style>
+	.terms-notice {
+		font-size: 12px;
+		color: var(--color-muted);
+		text-align: center;
+		margin: 2px 0 0;
+		line-height: 1.4;
+	}
+	.terms-notice a {
+		color: var(--color-primary);
+		text-decoration: underline;
+		font-weight: 600;
+	}
+
 	.page {
 		max-width: 480px;
 		margin: 0 auto;
