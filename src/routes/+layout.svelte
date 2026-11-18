@@ -28,10 +28,13 @@
 			!redirect &&
 			!/^\/(entrar|cadastrar|limpeza|vistoria|lavanderia|completar-cadastro)/.test(page.url.pathname)
 	);
+
+	const isWidePage = $derived(page.url.pathname.startsWith('/painel'));
+	const isAuthPage = $derived(page.url.pathname === '/entrar' || page.url.pathname === '/cadastrar');
 </script>
 
-<div class="safe">
-	<div class="card">
+<div class="safe" class:wide={isWidePage} class:auth-page={isAuthPage}>
+	<div class="card" class:wide-card={isWidePage} class:auth-card={isAuthPage}>
 		<div class="brand">
 			<img src="/logo.png" alt="Grupo Jolog" />
 		</div>
@@ -50,7 +53,23 @@
 		padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
 		max-width: 560px;
 		margin: 0 auto;
+		box-sizing: border-box;
+		transition: max-width 0.2s ease;
 	}
+
+	/* Página larga (Painel Admin) no desktop/tablet */
+	.safe.wide {
+		max-width: 1180px;
+	}
+
+	/* Centralização vertical e horizontal no Login/Cadastro na versão Web */
+	.safe.auth-page {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+
 	.brand {
 		display: flex;
 		justify-content: center;
@@ -69,10 +88,44 @@
 		padding: 28px 22px;
 		margin-bottom: 96px;
 		min-height: 50vh;
+		width: 100%;
+		box-sizing: border-box;
 	}
+
+	/* Card expandido para o painel de controle */
+	.card.wide-card {
+		padding: 32px 32px;
+		margin-bottom: 40px;
+	}
+
+	/* Card centralizado na autenticação */
+	.card.auth-card {
+		max-width: 440px;
+		margin-bottom: 0;
+		box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+	}
+
 	.loading {
 		text-align: center;
 		margin-top: 20vh;
 		color: var(--color-muted);
+	}
+
+	@media (max-width: 768px) {
+		.safe.wide {
+			max-width: 100%;
+			padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 80px);
+		}
+		.card.wide-card {
+			padding: 20px 14px;
+			margin-bottom: 80px;
+		}
+		.safe.auth-page {
+			display: block;
+		}
+		.card.auth-card {
+			max-width: 100%;
+			margin-bottom: 96px;
+		}
 	}
 </style>

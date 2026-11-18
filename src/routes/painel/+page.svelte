@@ -296,8 +296,43 @@
 			<p class="subtitle">Gestão operacional, agendamentos e equipe do Grupo Jolog.</p>
 		</div>
 		<div class="header-btns">
-			<button type="button" class="btn-refresh" onclick={loadAll} title="Recarregar">↻</button>
-			<button type="button" class="btn-exit" onclick={logout}>Sair</button>
+			<button
+				type="button"
+				class="btn-refresh"
+				onclick={loadAll}
+				title="Recarregar dados"
+				aria-label="Recarregar dados"
+			>
+				<svg
+					viewBox="0 0 24 24"
+					width="18"
+					height="18"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.4"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19" />
+				</svg>
+			</button>
+			<button type="button" class="btn-exit" onclick={logout}>
+				<svg
+					viewBox="0 0 24 24"
+					width="16"
+					height="16"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+				</svg>
+				<span>Sair</span>
+			</button>
 		</div>
 	</div>
 
@@ -739,30 +774,50 @@
 
 	.header-btns {
 		display: flex;
-		gap: 8px;
+		align-items: center;
+		gap: 10px;
 	}
 
 	.btn-refresh {
-		background: #f4f4f6;
-		border: 1px solid var(--color-border);
+		background: #ffffff;
+		color: var(--color-primary);
+		border: 1.5px solid var(--color-primary);
 		border-radius: 50%;
-		width: 36px;
-		height: 36px;
+		width: 42px;
+		height: 42px;
+		min-width: 42px;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.2rem;
+		box-shadow: 0 2px 6px rgba(173, 13, 60, 0.12);
+		transition: all 0.2s ease;
+	}
+
+	.btn-refresh:hover {
+		background: var(--color-primary);
+		color: #ffffff;
+		transform: rotate(180deg);
+		box-shadow: 0 4px 10px rgba(173, 13, 60, 0.25);
 	}
 
 	.btn-exit {
-		background: #f8d7da;
-		color: #721c24;
-		border: 1px solid #f5c6cb;
-		padding: 6px 14px;
+		background: #fee2e2;
+		color: #991b1b;
+		border: 1.5px solid #fca5a5;
+		padding: 8px 16px;
 		border-radius: var(--radius-sm);
 		font-weight: 700;
+		font-size: 0.88rem;
 		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		transition: background 0.15s ease;
+	}
+
+	.btn-exit:hover {
+		background: #fecaca;
 	}
 
 	.main-tabs {
@@ -935,13 +990,26 @@
 	}
 
 	.btn-detail {
-		background: #f0f0f2;
-		border: 1px solid var(--color-border);
-		padding: 6px 12px;
-		border-radius: 4px;
-		font-weight: 600;
+		background: var(--color-primary);
+		color: #ffffff;
+		border: none;
+		padding: 7px 14px;
+		border-radius: var(--radius-sm);
+		font-weight: 700;
 		font-size: 0.82rem;
 		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		white-space: nowrap;
+		box-shadow: 0 2px 5px rgba(173, 13, 60, 0.2);
+		transition: all 0.15s ease;
+	}
+
+	.btn-detail:hover {
+		background: var(--color-primary-dark);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 10px rgba(173, 13, 60, 0.3);
 	}
 
 	.laundry-cards {

@@ -61,4 +61,3 @@ console.log(`Papel:    cliente`);
 console.log(`Imóvel:   Condomínio Etehe, Bloco 1, Apt 101 (2 quartos)`);
 console.log(`========================================\n`);
 process.exit(0);
-
