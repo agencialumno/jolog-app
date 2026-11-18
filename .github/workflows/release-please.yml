@@ -12,6 +12,6 @@ jobs:
       # Use um PAT (RELEASE_PLEASE_TOKEN) para que a tag criada dispare os workflows de build.
       - uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
