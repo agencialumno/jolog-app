@@ -4,6 +4,19 @@ import { adminDb } from '../../../../lib/server/firebase';
 import { jsonBody } from '../../../../lib/server/http';
 import type { RequestHandler } from './$types';
 
+export const GET: RequestHandler = async ({ request }) => {
+	await requireRole(request, 'admin');
+	const snaps = await adminDb().collection('inspectionChecklistItems').orderBy('position').get();
+	return json(
+		snaps.docs.map((d) => ({
+			id: d.id,
+			label: d.get('label') as string,
+			active: d.get('active') !== false,
+			position: (d.get('position') as number) ?? 0
+		}))
+	);
+};
+
 /** Admin cria/edita item do catalogo. Corpo: { id?, label, active?, position? } */
 export const POST: RequestHandler = async ({ request }) => {
 	await requireRole(request, 'admin');
