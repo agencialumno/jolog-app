@@ -24,7 +24,7 @@
 	});
 	const showNav = $derived(
 		session.ready &&
-			session.role === 'cliente' &&
+			(session.role === 'cliente' || session.role === 'equipe') &&
 			!redirect &&
 			!/^\/(entrar|cadastrar|limpeza|vistoria|lavanderia|completar-cadastro)/.test(page.url.pathname)
 	);

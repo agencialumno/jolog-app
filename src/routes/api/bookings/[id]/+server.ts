@@ -12,9 +12,31 @@ export const GET: RequestHandler = async ({ request, params }) => {
 	if (!snap.exists) throw error(404, 'not found');
 	const b = snap.data() as BookingDoc;
 	if (!canViewBooking(u, b)) throw error(404, 'not found');
+
 	const prop = b.propertyId ? await adminDb().collection('properties').doc(b.propertyId).get() : null;
 	const property = prop?.exists
-		? { address: prop.get('address'), condominium: prop.get('condominium') ?? null, bedrooms: prop.get('bedrooms') }
+		? {
+				address: prop.get('address'),
+				condominium: prop.get('condominium') ?? null,
+				block: prop.get('block') ?? null,
+				apartment: prop.get('apartment') ?? null,
+				street: prop.get('street') ?? null,
+				number: prop.get('number') ?? null,
+				bedrooms: prop.get('bedrooms')
+			}
 		: null;
-	return json({ id: snap.id, ...serialize(b), property });
+
+	const customerSnap =
+		(u.role === 'equipe' || u.role === 'admin') && b.customerId
+			? await adminDb().collection('profiles').doc(b.customerId).get()
+			: null;
+
+	const customer = customerSnap?.exists
+		? {
+				name: (customerSnap.get('name') as string) || 'Cliente',
+				phone: (customerSnap.get('phone') as string | null) ?? null
+			}
+		: null;
+
+	return json({ id: snap.id, ...serialize(b), property, customer });
 };

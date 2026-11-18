@@ -64,11 +64,36 @@ export async function signUp(
 
 /** Baixa uma foto pelo endpoint autenticado (nunca ha URL publica) e devolve uma object URL local. */
 export async function photoObjectUrl(bookingId: string, photoId: string): Promise<string> {
-	const user = firebaseAuth().currentUser;
+	const user = await getAuthUser();
 	if (!user) throw new ApiError(401, 'not signed in');
-	const res = await fetch(`${env.PUBLIC_API_BASE_URL ?? ''}/api/bookings/${bookingId}/photos/${photoId}`, {
+	const baseUrl = Capacitor.isNativePlatform() ? (env.PUBLIC_API_BASE_URL ?? '') : '';
+	const res = await fetch(`${baseUrl}/api/bookings/${bookingId}/photos/${photoId}`, {
 		headers: { Authorization: `Bearer ${await user.getIdToken()}` }
 	});
 	if (!res.ok) throw new ApiError(res.status, 'photo unavailable');
 	return URL.createObjectURL(await res.blob());
+}
+
+/** Envia uma foto antes/depois para o booking autenticado. */
+export async function uploadBookingPhoto(
+	bookingId: string,
+	kind: 'before' | 'after',
+	file: File
+): Promise<{ id: string }> {
+	const user = await getAuthUser();
+	if (!user) throw new ApiError(401, 'not signed in');
+	const baseUrl = Capacitor.isNativePlatform() ? (env.PUBLIC_API_BASE_URL ?? '') : '';
+	const fd = new FormData();
+	fd.append('kind', kind);
+	fd.append('file', file);
+	const res = await fetch(`${baseUrl}/api/bookings/${bookingId}/photos`, {
+		method: 'POST',
+		headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+		body: fd
+	});
+	if (!res.ok) {
+		const txt = await res.text();
+		throw new ApiError(res.status, txt || 'Falha ao enviar foto');
+	}
+	return (await res.json()) as { id: string };
 }

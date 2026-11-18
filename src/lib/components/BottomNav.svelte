@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { session } from '../auth/session.svelte';
 
-	const items = [
+	const clientItems = [
 		{ href: '/', label: 'Início', icon: 'M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z' },
 		{
 			href: '/pedidos',
@@ -10,10 +11,21 @@
 		},
 		{ href: '/conta', label: 'Conta', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9a8 8 0 0 1 16 0' }
 	];
+
+	const equipeItems = [
+		{
+			href: '/equipe',
+			label: 'Serviços',
+			icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9 2 2 4-4'
+		},
+		{ href: '/conta', label: 'Conta', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9a8 8 0 0 1 16 0' }
+	];
+
+	const items = $derived(session.role === 'equipe' ? equipeItems : clientItems);
 	const active = (href: string) => (href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href));
 </script>
 
-<nav aria-label="Principal">
+<nav aria-label="Principal" class:two-cols={items.length === 2}>
 	{#each items as it (it.href)}
 		<a href={it.href} class:on={active(it.href)} aria-current={active(it.href) ? 'page' : undefined}>
 			<svg
@@ -47,6 +59,10 @@
 		border-radius: 999px;
 		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
 		z-index: 10;
+	}
+	nav.two-cols {
+		grid-template-columns: repeat(2, 1fr);
+		width: min(280px, calc(100% - 32px));
 	}
 	a {
 		display: flex;
