@@ -97,3 +97,23 @@ export async function uploadBookingPhoto(
 	}
 	return (await res.json()) as { id: string };
 }
+
+/** Baixa a nota fiscal em PDF do pedido autenticado. Retorna o Blob ou status de processamento. */
+export async function downloadInvoiceBlob(
+	bookingId: string
+): Promise<{ status: 'ready'; blob: Blob } | { status: 'processing' }> {
+	const user = await getAuthUser();
+	if (!user) throw new ApiError(401, 'not signed in');
+	const baseUrl = Capacitor.isNativePlatform() ? (env.PUBLIC_API_BASE_URL ?? '') : '';
+	const res = await fetch(`${baseUrl}/api/bookings/${bookingId}/invoice`, {
+		headers: { Authorization: `Bearer ${await user.getIdToken()}` }
+	});
+	if (res.status === 202) {
+		return { status: 'processing' };
+	}
+	if (!res.ok) {
+		throw new ApiError(res.status, 'Nota fiscal não encontrada ou indisponível');
+	}
+	const blob = await res.blob();
+	return { status: 'ready', blob };
+}
