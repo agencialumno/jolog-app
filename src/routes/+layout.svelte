@@ -33,7 +33,7 @@
 	const isAuthPage = $derived(page.url.pathname === '/entrar' || page.url.pathname === '/cadastrar');
 </script>
 
-<div class="safe" class:wide={isWidePage} class:auth-page={isAuthPage}>
+<div class="safe" class:wide={isWidePage} class:auth-page={isAuthPage} class:has-nav={showNav}>
 	<div class="card" class:wide-card={isWidePage} class:auth-card={isAuthPage}>
 		<div class="brand">
 			<img src="/logo.png" alt="Grupo Jolog" />
@@ -48,24 +48,33 @@
 </div>
 
 <style>
+	/*
+	 * A pagina ocupa exatamente a altura da tela (100dvh). O card cresce para preencher o espaco restante,
+	 * entao so ha rolagem quando o conteudo realmente nao cabe.
+	 */
 	.safe {
+		display: flex;
+		flex-direction: column;
 		min-height: 100vh;
+		min-height: 100dvh;
 		padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
 		max-width: 560px;
 		margin: 0 auto;
 		box-sizing: border-box;
-		transition: max-width 0.2s ease;
 	}
 
-	/* Página larga (Painel Admin) no desktop/tablet */
+	/* Reserva espaco para a barra inferior flutuante (so quando ela existe). */
+	.safe.has-nav {
+		padding-bottom: calc(env(safe-area-inset-bottom) + 92px);
+	}
+
+	/* Painel admin: largo no desktop */
 	.safe.wide {
 		max-width: 1180px;
 	}
 
-	/* Centralização vertical e horizontal no Login/Cadastro na versão Web */
+	/* Login/cadastro: card centralizado na tela (web) */
 	.safe.auth-page {
-		display: flex;
-		flex-direction: column;
 		justify-content: center;
 		align-items: center;
 	}
@@ -73,7 +82,7 @@
 	.brand {
 		display: flex;
 		justify-content: center;
-		padding: 4px 0 20px;
+		padding: 0 0 16px;
 	}
 	.brand img {
 		height: 76px;
@@ -82,50 +91,52 @@
 		object-fit: contain;
 	}
 	.card {
+		flex: 1 1 auto;
 		background: var(--color-bg);
 		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow);
-		padding: 28px 22px;
-		margin-bottom: 96px;
-		min-height: 50vh;
+		padding: 24px 22px;
 		width: 100%;
 		box-sizing: border-box;
 	}
-
-	/* Card expandido para o painel de controle */
 	.card.wide-card {
-		padding: 32px 32px;
-		margin-bottom: 40px;
+		padding: 28px 32px;
 	}
-
-	/* Card centralizado na autenticação */
 	.card.auth-card {
+		flex: 0 1 auto;
 		max-width: 440px;
-		margin-bottom: 0;
 		box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 	}
 
 	.loading {
 		text-align: center;
-		margin-top: 20vh;
+		margin: 20vh 0 0;
 		color: var(--color-muted);
 	}
 
 	@media (max-width: 768px) {
 		.safe.wide {
 			max-width: 100%;
-			padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 80px);
+			padding: calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 74px);
 		}
 		.card.wide-card {
-			padding: 20px 14px;
-			margin-bottom: 80px;
+			padding: 14px 14px 16px;
+			border-radius: 18px;
 		}
+		.safe.wide .brand {
+			padding-bottom: 8px;
+		}
+		.safe.wide .brand img {
+			height: 44px;
+		}
+		/* Login/cadastro no celular: card ocupa a tela, sem centralizar */
 		.safe.auth-page {
-			display: block;
+			justify-content: flex-start;
+			align-items: stretch;
 		}
 		.card.auth-card {
+			flex: 1 1 auto;
 			max-width: 100%;
-			margin-bottom: 96px;
 		}
 	}
 </style>

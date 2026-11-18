@@ -138,6 +138,23 @@
 	const laundryBookings = $derived(bookings.filter((b) => b.serviceType === 'laundry'));
 	const staffMembers = $derived(staffList.filter((u) => u.role === 'equipe'));
 
+	const tabs = $derived([
+		{ id: 'bookings' as const, label: 'Pedidos', count: bookings.length },
+		{ id: 'laundry' as const, label: 'Lavanderia', count: laundryBookings.length },
+		{ id: 'team' as const, label: 'Equipe', count: 0 },
+		{ id: 'checklist' as const, label: 'Vistoria', count: 0 }
+	]);
+
+	const statusLabels: Record<string, string> = {
+		pending_payment: 'Pendente',
+		scheduled: 'Agendado',
+		awaiting_contact: 'Aguardando contato',
+		in_progress: 'Em andamento',
+		completed: 'Concluído',
+		canceled: 'Cancelado',
+		refunded: 'Reembolsado'
+	};
+
 	async function openDetails(b: Booking) {
 		selectedBooking = b;
 		modalPhotos = [];
@@ -337,19 +354,19 @@
 	</div>
 
 	<!-- Navegação Principal -->
-	<nav class="main-tabs">
-		<button type="button" class="tab-btn" class:active={tab === 'bookings'} onclick={() => (tab = 'bookings')}>
-			📋 Pedidos & Agenda ({bookings.length})
-		</button>
-		<button type="button" class="tab-btn" class:active={tab === 'laundry'} onclick={() => (tab = 'laundry')}>
-			🧺 Lavanderia ({laundryBookings.length})
-		</button>
-		<button type="button" class="tab-btn" class:active={tab === 'team'} onclick={() => (tab = 'team')}>
-			👥 Equipe & Acessos ({staffMembers.length})
-		</button>
-		<button type="button" class="tab-btn" class:active={tab === 'checklist'} onclick={() => (tab = 'checklist')}>
-			✓ Itens de Vistoria
-		</button>
+	<nav class="main-tabs" aria-label="Seções do painel">
+		{#each tabs as t (t.id)}
+			<button
+				type="button"
+				class="tab-btn"
+				class:active={tab === t.id}
+				aria-current={tab === t.id ? 'page' : undefined}
+				onclick={() => (tab = t.id)}
+			>
+				<span class="tab-label">{t.label}</span>
+				{#if t.count > 0}<span class="tab-count">{t.count}</span>{/if}
+			</button>
+		{/each}
 	</nav>
 
 	{#if loading}
@@ -386,6 +403,36 @@
 					<option value="pending_payment">Aguardando pagamento</option>
 				</select>
 			</div>
+		</div>
+
+		<!-- Mobile: cards com prévia; toque abre a tela do agendamento -->
+		<div class="booking-cards">
+			{#each filteredBookings as b (b.id)}
+				<button type="button" class="b-card" onclick={() => openDetails(b)}>
+					<div class="b-card-top">
+						<span class="tag tag-{b.serviceType}">{serviceNames[b.serviceType]}</span>
+						<span class="badge status-{b.status}">{statusLabels[b.status] ?? b.status}</span>
+					</div>
+					<div class="b-card-date">{formatDate(b.startsAt)}</div>
+					<div class="b-card-line">
+						{#if b.property}
+							<b>{b.property.condominium || 'Condomínio'}</b>
+							<span class="sub-txt">
+								{#if b.property.block}· Bl {b.property.block}{/if}
+								{#if b.property.apartment}· Apto {b.property.apartment}{/if}
+							</span>
+						{:else}
+							<span class="muted">Imóvel não informado</span>
+						{/if}
+					</div>
+					<div class="b-card-bottom">
+						<span class="staff-tag" class:unassigned={!b.assignedStaff}>{staffName(b.assignedStaff)}</span>
+						<span class="b-card-price">{formatBRL(b.priceCents)}</span>
+					</div>
+				</button>
+			{:else}
+				<p class="empty-cell">Nenhum pedido encontrado para os filtros selecionados.</p>
+			{/each}
 		</div>
 
 		<div class="table-container">
@@ -631,13 +678,28 @@
 				tabindex="-1"
 			>
 				<div class="modal-header">
-					<div>
-						<span class="tag tag-{selectedBooking.serviceType}">
-							{serviceNames[selectedBooking.serviceType]}
-						</span>
-						<h2>Detalhes do Atendimento</h2>
-					</div>
-					<button type="button" class="btn-close" onclick={() => (selectedBooking = null)}>✕</button>
+					<button type="button" class="btn-back" onclick={() => (selectedBooking = null)}>
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.4"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M19 12H5M12 19l-7-7 7-7" />
+						</svg>
+						<span>Voltar</span>
+					</button>
+				</div>
+				<div class="modal-title">
+					<span class="tag tag-{selectedBooking.serviceType}">
+						{serviceNames[selectedBooking.serviceType]}
+					</span>
+					<h2>Detalhes do Atendimento</h2>
 				</div>
 
 				<div class="modal-body">
@@ -820,18 +882,25 @@
 		background: #fecaca;
 	}
 
+	/* NAVEGAÇÃO: abas de texto no topo (desktop) / barra de navegação fixa embaixo (mobile) */
 	.main-tabs {
 		display: flex;
-		gap: 8px;
+		gap: 4px;
 		border-bottom: 2px solid var(--color-border);
 		margin-bottom: 20px;
-		overflow-x: auto;
 	}
 
 	.tab-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
 		background: none;
+		box-shadow: none;
 		border: none;
-		padding: 10px 16px;
+		border-radius: 0;
+		min-height: 44px;
+		padding: 10px 18px;
 		font-size: 0.95rem;
 		font-weight: 700;
 		color: var(--color-muted);
@@ -841,9 +910,31 @@
 		white-space: nowrap;
 	}
 
+	.tab-btn:hover {
+		transform: none;
+		color: var(--color-primary);
+	}
+
 	.tab-btn.active {
 		color: var(--color-primary);
 		border-bottom-color: var(--color-primary);
+	}
+
+	.tab-count {
+		min-width: 20px;
+		padding: 1px 6px;
+		border-radius: 999px;
+		background: var(--color-primary);
+		color: #fff;
+		font-size: 0.7rem;
+		font-weight: 700;
+		line-height: 1.5;
+		text-align: center;
+	}
+
+	/* cards de pedidos: só no mobile */
+	.booking-cards {
+		display: none;
 	}
 
 	.filter-bar {
@@ -1389,5 +1480,246 @@
 
 	.muted {
 		color: var(--color-muted);
+	}
+
+	.empty-cell {
+		text-align: center;
+		color: var(--color-muted);
+		padding: 24px 12px;
+		margin: 0;
+	}
+
+	/* Cabeçalho do detalhe */
+	.btn-back {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 44px;
+		padding: 0 14px 0 10px;
+		background: #fff;
+		color: var(--color-primary);
+		border: 1.5px solid var(--color-primary);
+		border-radius: var(--radius-sm);
+		box-shadow: none;
+		font-size: 0.9rem;
+		font-weight: 700;
+	}
+
+	.btn-back:hover {
+		background: var(--color-primary);
+		color: #fff;
+		transform: none;
+	}
+
+	.modal-title {
+		display: grid;
+		gap: 6px;
+		margin-bottom: 14px;
+	}
+
+	.modal-title h2 {
+		font-size: 1.25rem;
+	}
+
+	/* ===== MOBILE ===== */
+	@media (max-width: 768px) {
+		.panel-header {
+			align-items: center;
+			padding-bottom: 10px;
+			margin-bottom: 12px;
+		}
+
+		h1 {
+			font-size: 1.2rem;
+			margin: 0;
+		}
+
+		.subtitle {
+			display: none;
+		}
+
+		.btn-refresh {
+			width: 40px;
+			height: 40px;
+			min-width: 40px;
+			min-height: 40px;
+			padding: 0;
+		}
+
+		.btn-exit {
+			min-height: 40px;
+			padding: 0 12px;
+		}
+
+		/* Navigation bar fixa na base da tela, só texto, 4 colunas iguais */
+		.main-tabs {
+			position: fixed;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			z-index: 20;
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 0;
+			margin: 0;
+			padding: 0 0 env(safe-area-inset-bottom);
+			background: #fff;
+			border-top: 1px solid var(--color-border);
+			border-bottom: none;
+			box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
+		}
+
+		.tab-btn {
+			flex-direction: column;
+			gap: 2px;
+			min-height: 58px;
+			padding: 8px 2px;
+			font-size: 0.78rem;
+			border-bottom: none;
+			border-top: 3px solid transparent;
+			margin: 0;
+			position: relative;
+		}
+
+		.tab-btn.active {
+			border-top-color: var(--color-primary);
+			background: rgba(173, 13, 60, 0.05);
+		}
+
+		.tab-count {
+			position: absolute;
+			top: 6px;
+			right: 6px;
+			min-width: 18px;
+			font-size: 0.65rem;
+			padding: 0 5px;
+		}
+
+		/* Filtros lado a lado, sem estourar a largura */
+		.filter-bar {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 8px;
+			padding: 10px;
+			margin-bottom: 12px;
+		}
+
+		.filter-group {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 4px;
+			min-width: 0;
+			font-size: 0.78rem;
+		}
+
+		.filter-group select {
+			width: 100%;
+			min-height: 44px;
+			font-size: 0.85rem;
+			padding: 0 8px;
+		}
+
+		/* Tabela some; entram os cards (sem scroll lateral) */
+		.table-container {
+			display: none;
+		}
+
+		.booking-cards {
+			display: grid;
+			gap: 10px;
+		}
+
+		.b-card {
+			display: grid;
+			gap: 6px;
+			width: 100%;
+			min-height: 0;
+			padding: 12px;
+			text-align: left;
+			background: #fff;
+			color: var(--color-text);
+			border: 1.5px solid var(--color-border);
+			border-radius: var(--radius);
+			box-shadow: none;
+			font-weight: 400;
+			font-size: 0.9rem;
+		}
+
+		.b-card:hover {
+			transform: none;
+			border-color: var(--color-primary);
+		}
+
+		.b-card-top,
+		.b-card-bottom {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.b-card-date {
+			font-weight: 700;
+			font-size: 0.95rem;
+		}
+
+		.b-card-line {
+			font-size: 0.88rem;
+		}
+
+		.b-card-price {
+			font-weight: 800;
+			color: var(--color-primary);
+		}
+
+		.laundry-cards {
+			grid-template-columns: 1fr;
+			gap: 10px;
+		}
+
+		.laundry-actions .btn-wpp,
+		.laundry-actions .btn-act {
+			flex: 1 1 100%;
+			text-align: center;
+			min-height: 44px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.inline-form {
+			flex-direction: column;
+		}
+
+		.promote-box,
+		.promo-form,
+		.checklist-form-box,
+		.catalog-list {
+			min-width: 0;
+		}
+
+		/* Tela cheia para o agendamento selecionado */
+		.modal-backdrop {
+			padding: 0;
+			align-items: stretch;
+		}
+
+		.modal-content {
+			max-width: 100%;
+			max-height: none;
+			height: 100%;
+			border-radius: 0;
+			padding: calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 16px);
+		}
+
+		.modal-header {
+			margin-bottom: 12px;
+			padding-bottom: 10px;
+		}
+
+		.detail-grid {
+			grid-template-columns: 1fr;
+			gap: 12px;
+		}
 	}
 </style>
